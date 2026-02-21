@@ -299,6 +299,17 @@ const Layout = () => {
                         <Outlet />
                     </div>
                 </main>
+
+                {/* Footer */}
+                {location.pathname !== '/pos' && (
+                    <footer className="flex-shrink-0 border-t border-slate-100 bg-white">
+                        <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-center`}>
+                            <p className="text-[11px] font-semibold text-slate-400">
+                                © {new Date().getFullYear()} Hisabi. All rights reserved. Abdul Hussain.
+                            </p>
+                        </div>
+                    </footer>
+                )}
             </div>
         </div>
     );
