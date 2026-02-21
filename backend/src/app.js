@@ -51,8 +51,8 @@ app.use('/api/due-payments', duePaymentRoutes);
 const frontendDist = path.join(__dirname, '../../frontend/dist');
 app.use(express.static(frontendDist));
 
-// React Router fallback — serve index.html for all non-API routes
-app.get('*', (req, res) => {
+// React Router fallback — serve index.html for all non-API routes (Express 5 syntax)
+app.get('/{*path}', (req, res) => {
     res.sendFile(path.join(frontendDist, 'index.html'));
 });
 
