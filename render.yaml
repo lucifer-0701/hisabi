@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: hisabi
+    runtime: node
+    region: oregon
+    plan: free
+    buildCommand: npm run build
+    startCommand: node backend/src/server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: hisabi-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+
+databases:
+  - name: hisabi-db
+    databaseName: hisabi
+    user: hisabi
+    region: oregon
+    plan: free
