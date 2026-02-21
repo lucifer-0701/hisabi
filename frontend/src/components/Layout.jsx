@@ -6,7 +6,7 @@ import {
     LayoutDashboard, ShoppingCart, Package, FileText, BarChart2,
     Users, Truck, Wallet, RotateCcw, ShoppingBag, User,
     LogOut, Menu, X, ChevronRight, Store,
-    PackageCheck, Ticket, ClipboardList, Target, Globe
+    PackageCheck, Ticket, ClipboardList, Target, Globe, HelpCircle, Mail
 } from 'lucide-react';
 
 
@@ -39,6 +39,12 @@ const NAV = [
             { name: 'nav.stock_adj', href: '/stock-adjustments', icon: PackageCheck },
             { name: 'nav.discounts', href: '/discount-codes', icon: Ticket },
             { name: 'nav.targets', href: '/targets', icon: Target },
+        ]
+    },
+    {
+        group: 'nav.group_support',
+        items: [
+            { name: 'nav.help', href: '/help', icon: HelpCircle },
         ]
     },
 ];
@@ -303,10 +309,17 @@ const Layout = () => {
                 {/* Footer */}
                 {location.pathname !== '/pos' && (
                     <footer className="flex-shrink-0 border-t border-slate-100 bg-white">
-                        <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-center`}>
+                        <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col sm:flex-row items-center justify-between gap-2`}>
                             <p className="text-[11px] font-semibold text-slate-400">
                                 © {new Date().getFullYear()} Hisabi. All rights reserved. Abdul Hussain.
                             </p>
+                            <a
+                                href="mailto:support@hisabi.app"
+                                className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-400 hover:text-blue-600 transition-colors"
+                            >
+                                <Mail className="w-3 h-3" />
+                                support@hisabi.app
+                            </a>
                         </div>
                     </footer>
                 )}

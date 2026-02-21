@@ -42,6 +42,7 @@
         "group_core": "Core",
         "group_operations": "Operations",
         "group_management": "Management",
+        "group_support": "Support",
         "group_account": "Account",
         "dashboard": "Dashboard",
         "pos": "POS / Billing",
@@ -58,6 +59,7 @@
         "stock_adj": "Stock Adjustments",
         "discounts": "Discount Codes",
         "targets": "Sales Targets",
+        "help": "Help & FAQ",
         "profile": "Profile",
         "inventory": "Inventory",
         "categories": "Categories"
@@ -110,7 +112,6 @@
         "grand_total": "Grand Total",
         "page": "Page",
         "of": "of",
-
         "save_changes": "Save Changes",
         "error": "An error occurred"
     },

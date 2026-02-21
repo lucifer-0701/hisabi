@@ -42,6 +42,7 @@
         "group_core": "الأساسية",
         "group_operations": "العمليات",
         "group_management": "الإدارة",
+        "group_support": "الدعم",
         "group_account": "الحساب",
         "dashboard": "لوحة التحكم",
         "pos": "نظام البيع / الفواتير",
@@ -58,6 +59,7 @@
         "stock_adj": "تعديل المخزون",
         "discounts": "أكواد الخصم",
         "targets": "أهداف المبيعات",
+        "help": "المساعدة والأسئلة الشائعة",
         "profile": "الملف الشخصي",
         "inventory": "المخزون",
         "categories": "الأصناف"
