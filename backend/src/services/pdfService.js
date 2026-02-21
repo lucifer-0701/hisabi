@@ -393,9 +393,20 @@ const generateDueReceiptPDF = async (payment, invoice, shop) => {
 };
 
 const renderPDF = async (html) => {
+    const isProduction = process.env.NODE_ENV === 'production';
     const browser = await puppeteer.launch({
         headless: 'new',
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
+        executablePath: isProduction
+            ? '/usr/bin/google-chrome-stable'
+            : undefined, // use puppeteer's bundled Chrome in dev
+        args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+            '--no-zygote',
+            '--single-process'
+        ]
     });
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: 'load' });
