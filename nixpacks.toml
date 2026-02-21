@@ -1,11 +1,11 @@
 [phases.setup]
 nixPkgs = ["nodejs_20", "google-chrome-stable"]
 
+[phases.install]
+cmds = ["npm install"]
+
 [phases.build]
-cmds = [
-    "cd frontend && npm install && npm run build",
-    "cd backend && npm install"
-]
+cmds = ["npm run build"]
 
 [start]
 cmd = "node backend/src/server.js"
