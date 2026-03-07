@@ -1,5 +1,5 @@
 const { Op } = require('sequelize');
-const { StockAdjustment, Product } = require('../models');
+const { StockAdjustment, Product } = require('../../../database/models');
 
 // GET /api/stock-adjustments — list all for shop
 const getAdjustments = async (req, res) => {

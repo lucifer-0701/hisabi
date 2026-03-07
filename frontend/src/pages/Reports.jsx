@@ -176,7 +176,7 @@ const Reports = () => {
                     { label: t('reports.total_sales'), value: stats.totalSales, icon: ShoppingCart, color: 'text-blue-600', bg: 'bg-blue-50' },
                     { label: t('reports.total_revenue'), value: stats.totalRevenue, icon: DollarSign, color: 'text-teal-600', bg: 'bg-teal-50' },
                     { label: t('reports.net_profit'), value: stats.netProfit, icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-                    { label: t('reports.total_due'), value: stats.totalDue, icon: AlertCircle, color: 'text-red-600', bg: 'bg-red-50' },
+                    { label: t('reports.total due'), value: stats.totalDue, icon: AlertCircle, color: 'text-red-600', bg: 'bg-red-50' },
                     { label: t('reports.profit_margin'), value: `${stats.profitMargin.toFixed(1)}%`, icon: BarChart3, color: 'text-indigo-600', bg: 'bg-indigo-50', noCurrency: true }
                 ].map((kpi, idx) => (
                     <div key={idx} className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">

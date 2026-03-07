@@ -1,6 +1,6 @@
 const Joi = require('joi');
-const { sequelize } = require('../config/database');
-const { Product, BundleItem } = require('../models');
+const { sequelize } = require('../../../database/database');
+const { Product, BundleItem } = require('../../../database/models');
 const { Op } = require('sequelize');
 
 const productSchema = Joi.object({

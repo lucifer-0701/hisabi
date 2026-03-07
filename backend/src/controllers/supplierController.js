@@ -1,4 +1,4 @@
-const { Supplier } = require('../models');
+const { Supplier } = require('../../../database/models');
 const { Op } = require('sequelize');
 
 const listSuppliers = async (req, res) => {

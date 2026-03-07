@@ -1,5 +1,5 @@
-const { sequelize } = require('../config/database');
-const { Shop, Product, Invoice, InvoiceItem, Expense } = require('../models');
+const { sequelize } = require('../../../database/database');
+const { Shop, Product, Invoice, InvoiceItem, Expense } = require('../../../database/models');
 const { Op } = require('sequelize');
 
 const getDashboardStats = async (req, res) => {

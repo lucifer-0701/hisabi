@@ -5,8 +5,8 @@ const morgan = require('morgan');
 const path = require('path');
 require('dotenv').config();
 
-const { testConnection, sequelize } = require('./config/database');
-const { syncDatabase } = require('./models');
+const { testConnection, sequelize } = require('../../database/database');
+const { syncDatabase } = require('../../database/models');
 const authRoutes = require('./routes/authRoutes');
 const productRoutes = require('./routes/productRoutes');
 const invoiceRoutes = require('./routes/invoiceRoutes');

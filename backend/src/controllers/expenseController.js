@@ -1,4 +1,4 @@
-const { Expense } = require('../models');
+const { Expense } = require('../../../database/models');
 const { Op } = require('sequelize');
 
 const listExpenses = async (req, res) => {

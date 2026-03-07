@@ -1,4 +1,4 @@
-const { SalesTarget, Invoice, sequelize } = require('../models');
+const { SalesTarget, Invoice, sequelize } = require('../../../database/models');
 const { Op } = require('sequelize');
 
 // GET /api/targets — get all targets + current month progress

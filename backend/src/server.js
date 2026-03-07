@@ -1,5 +1,5 @@
 const app = require('./app');
-const { syncDatabase, sequelize } = require('./models');
+const { syncDatabase, sequelize } = require('../../database/models');
 
 const PORT = process.env.PORT || 5000;
 const HOST = '0.0.0.0'; // Bind to all interfaces — required for Railway/Docker

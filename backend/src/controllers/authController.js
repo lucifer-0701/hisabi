@@ -1,6 +1,6 @@
 const Joi = require('joi');
-const { sequelize } = require('../config/database');
-const { Shop, User } = require('../models');
+const { sequelize } = require('../../../database/database');
+const { Shop, User } = require('../../../database/models');
 const { hashPassword, comparePassword } = require('../utils/hash');
 const { generateToken } = require('../utils/token');
 

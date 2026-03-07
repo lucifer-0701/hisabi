@@ -1,4 +1,4 @@
-const { DiscountCode } = require('../models');
+const { DiscountCode } = require('../../../database/models');
 const { Op } = require('sequelize');
 
 // GET /api/discount-codes

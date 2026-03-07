@@ -1,6 +1,6 @@
-const { DuePayment, Invoice, Shop, Customer } = require('../models');
+const { DuePayment, Invoice, Shop, Customer } = require('../../../database/models');
 const { Op } = require('sequelize');
-const { sequelize } = require('../config/database');
+const { sequelize } = require('../../../database/database');
 
 const getPendingDues = async (req, res) => {
     try {

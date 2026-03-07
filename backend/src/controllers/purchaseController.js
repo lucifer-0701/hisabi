@@ -1,5 +1,5 @@
-const { PurchaseOrder, PurchaseOrderItem, Product, Supplier } = require('../models');
-const { sequelize } = require('../config/database');
+const { PurchaseOrder, PurchaseOrderItem, Product, Supplier } = require('../../../database/models');
+const { sequelize } = require('../../../database/database');
 
 const listPurchases = async (req, res) => {
     try {

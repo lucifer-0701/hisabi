@@ -1,5 +1,5 @@
-const { Return, Product } = require('../models');
-const { sequelize } = require('../config/database');
+const { Return, Product } = require('../../../database/models');
+const { sequelize } = require('../../../database/database');
 
 const listReturns = async (req, res) => {
     try {

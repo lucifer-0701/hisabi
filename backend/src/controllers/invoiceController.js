@@ -1,6 +1,6 @@
 const Joi = require('joi');
-const { sequelize } = require('../config/database');
-const { Shop, Product, Invoice, InvoiceItem, BundleItem } = require('../models');
+const { sequelize } = require('../../../database/database');
+const { Shop, Product, Invoice, InvoiceItem, BundleItem } = require('../../../database/models');
 
 const invoiceSchema = Joi.object({
     customer_name: Joi.string().allow('', null),

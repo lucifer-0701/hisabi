@@ -1,4 +1,4 @@
-const { Invoice, InvoiceItem, Product, sequelize } = require('../models');
+const { Invoice, InvoiceItem, Product, sequelize } = require('../../../database/models');
 const { Op } = require('sequelize');
 
 // GET /api/reports/end-of-day — end of day summary
