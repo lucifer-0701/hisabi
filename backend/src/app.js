@@ -44,7 +44,11 @@ app.use(cors({
 app.use(express.json());
 app.use(helmet({ crossOriginResourcePolicy: false }));
 app.use(morgan('dev'));
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+const os = require('os');
+const uploadDir = process.env.VERCEL
+    ? path.join(os.tmpdir(), 'uploads')
+    : path.join(__dirname, '../uploads');
+app.use('/uploads', express.static(uploadDir));
 
 // API Routes
 app.use('/api/auth', authRoutes);
