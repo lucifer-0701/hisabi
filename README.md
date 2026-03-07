@@ -1,4 +1,4 @@
-# Hisabi — Inventory & Billing SaaS
+# Hisabi — Inventory & Billing SaaS 123
 
 **Hisabi** is a full-stack SaaS POS and inventory management system built for small retail shops in the UAE and Kuwait.
 
