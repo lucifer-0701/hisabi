@@ -1,4 +1,6 @@
 const { Sequelize } = require('sequelize');
+require('pg'); // Force inclusion for Vercel
+require('pg-hstore'); // Force inclusion for Vercel
 require('dotenv').config();
 
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
