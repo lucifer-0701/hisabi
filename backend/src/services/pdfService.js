@@ -1,422 +1,362 @@
-const puppeteer = require('puppeteer');
+const PDFDocument = require('pdfkit');
 
-const generateHTML = (invoice, shop) => {
-    const isUAE = shop.vat_enabled;
-    const currency = shop.currency;
-    const date = new Date(invoice.date).toLocaleDateString('en-GB', {
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+const PRIMARY = '#4f46e5';
+const TEXT_MAIN = '#1e293b';
+const TEXT_MUTED = '#64748b';
+const BG_LIGHT = '#f8fafc';
+const BORDER = '#e2e8f0';
+
+function formatDate(dateStr) {
+    return new Date(dateStr).toLocaleDateString('en-GB', {
         day: '2-digit', month: '2-digit', year: 'numeric'
     });
+}
 
-    const itemsRows = (invoice.items || []).map((item, index) => `
-    <tr class="item-row">
-        <td class="text-center">${index + 1}</td>
-        <td class="text-left">
-            <div class="product-name">${item.Product.name}</div>
-            ${item.Product.description ? `<div class="product-desc">${item.Product.description}</div>` : ''}
-        </td>
-        <td class="text-center">${item.quantity}</td>
-        <td class="text-right">${parseFloat(item.unit_price).toFixed(2)}</td>
-        <td class="text-right">${item.mrp && parseFloat(item.mrp) > 0 ? parseFloat(item.mrp).toFixed(2) : '—'}</td>
-        <td class="text-right">${(item.quantity * item.unit_price).toFixed(2)}</td>
-    </tr>
-    `).join('');
+function hexToRgb(hex) {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? [
+        parseInt(result[1], 16),
+        parseInt(result[2], 16),
+        parseInt(result[3], 16)
+    ] : [0, 0, 0];
+}
 
-    return `
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <style>
-            :root {
-                --primary: #4f46e5;
-                --text-main: #1e293b;
-                --text-muted: #64748b;
-                --bg-light: #f8fafc;
-                --border: #e2e8f0;
-            }
-            
-            body {
-                font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-                margin: 0;
-                padding: 40px;
-                color: var(--text-main);
-                line-height: 1.5;
-                background: white;
-            }
+function setColor(doc, hex) {
+    doc.fillColor(hexToRgb(hex));
+}
 
-            .invoice-container {
-                max-width: 800px;
-                margin: auto;
-            }
+function setStroke(doc, hex) {
+    doc.strokeColor(hexToRgb(hex));
+}
 
-            .header {
-                display: flex;
-                justify-content: space-between;
-                align-items: flex-start;
-                margin-bottom: 40px;
-                border-bottom: 2px solid var(--primary);
-                padding-bottom: 20px;
-            }
+// ─── Invoice PDF ─────────────────────────────────────────────────────────────
 
-            .shop-info h1 {
-                margin: 0;
-                color: var(--primary);
-                font-size: 28px;
-                font-weight: 800;
-                letter-spacing: -0.025em;
-            }
+const generateInvoicePDF = (invoice, shop) => {
+    return new Promise((resolve, reject) => {
+        const doc = new PDFDocument({ size: 'A4', margin: 40, bufferPages: true });
+        const chunks = [];
 
-            .shop-details {
-                font-size: 13px;
-                color: var(--text-muted);
-                margin-top: 8px;
-            }
+        doc.on('data', chunk => chunks.push(chunk));
+        doc.on('end', () => resolve(Buffer.concat(chunks)));
+        doc.on('error', reject);
 
-            .invoice-meta {
-                text-align: right;
-            }
+        const pageWidth = doc.page.width - 80; // minus margins
+        const isUAE = shop.vat_enabled;
+        const currency = shop.currency || 'AED';
+        const date = formatDate(invoice.date);
 
-            .invoice-meta h2 {
-                margin: 0;
-                font-size: 24px;
-                font-weight: 700;
-                color: var(--text-main);
-                text-transform: uppercase;
-            }
+        // ── Header bar ──────────────────────────────────────────────────────
+        // Shop name
+        doc.fontSize(22).font('Helvetica-Bold');
+        setColor(doc, PRIMARY);
+        doc.text(shop.name || 'Shop', 40, 40);
 
-            .meta-item {
-                font-size: 14px;
-                margin-top: 5px;
-            }
+        // Invoice label top-right
+        doc.fontSize(20).font('Helvetica-Bold');
+        setColor(doc, TEXT_MAIN);
+        doc.text('INVOICE', 40, 40, { align: 'right' });
 
-            .meta-label {
-                color: var(--text-muted);
-                font-weight: 600;
-            }
+        // Shop details below shop name
+        doc.fontSize(9).font('Helvetica');
+        setColor(doc, TEXT_MUTED);
+        let shopY = 68;
+        if (shop.address) { doc.text(shop.address, 40, shopY); shopY += 13; }
+        if (shop.phone || shop.email) {
+            doc.text([shop.phone, shop.email].filter(Boolean).join('  |  '), 40, shopY);
+            shopY += 13;
+        }
+        if (isUAE && shop.trn) {
+            doc.font('Helvetica-Bold').text(`TRN: ${shop.trn}`, 40, shopY);
+            doc.font('Helvetica');
+        }
 
-            .billing-row {
-                display: flex;
-                justify-content: space-between;
-                margin-bottom: 40px;
-            }
+        // Invoice meta top-right
+        doc.fontSize(10).font('Helvetica');
+        setColor(doc, TEXT_MUTED);
+        doc.text(`ID: #${invoice.id.toString().padStart(6, '0')}`, 40, 68, { align: 'right' });
+        doc.text(`Date: ${date}`, 40, 82, { align: 'right' });
 
-            .bill-to h3 {
-                margin: 0 0 10px 0;
-                font-size: 14px;
-                text-transform: uppercase;
-                color: var(--text-muted);
-                letter-spacing: 0.05em;
-            }
+        // Divider line under header
+        const divY = 105;
+        setStroke(doc, PRIMARY);
+        doc.moveTo(40, divY).lineTo(40 + pageWidth, divY).lineWidth(2).stroke();
 
-            .customer-name {
-                font-size: 18px;
-                font-weight: 700;
-                margin-bottom: 5px;
-            }
+        // ── Bill To ─────────────────────────────────────────────────────────
+        doc.fontSize(9).font('Helvetica-Bold');
+        setColor(doc, TEXT_MUTED);
+        doc.text('BILL TO', 40, divY + 15);
+        doc.fontSize(13).font('Helvetica-Bold');
+        setColor(doc, TEXT_MAIN);
+        doc.text(invoice.customer_name || 'Walk-in Customer', 40, divY + 28);
 
-            table {
-                width: 100%;
-                border-collapse: collapse;
-                margin-bottom: 30px;
-            }
+        // ── Items table ─────────────────────────────────────────────────────
+        const tableTop = divY + 60;
+        const colX = {
+            no: 40,
+            desc: 80,
+            qty: 340,
+            price: 390,
+            mrp: 455,
+            total: 510,
+        };
 
-            th {
-                background: var(--bg-light);
-                color: var(--text-muted);
-                font-weight: 600;
-                text-transform: uppercase;
-                font-size: 12px;
-                padding: 12px 15px;
-                text-align: left;
-                border-bottom: 2px solid var(--border);
+        // Table header background
+        doc.rect(40, tableTop, pageWidth, 22);
+        setColor(doc, BG_LIGHT);
+        doc.fill();
+
+        // Table header text
+        doc.fontSize(8).font('Helvetica-Bold');
+        setColor(doc, TEXT_MUTED);
+        const thY = tableTop + 7;
+        doc.text('#', colX.no, thY, { width: 36, align: 'center' });
+        doc.text('ITEM DESCRIPTION', colX.desc, thY);
+        doc.text('QTY', colX.qty, thY, { width: 45, align: 'center' });
+        doc.text('PRICE', colX.price, thY, { width: 60, align: 'right' });
+        doc.text('MRP', colX.mrp, thY, { width: 50, align: 'right' });
+        doc.text('TOTAL', colX.total, thY, { width: 45, align: 'right' });
+
+        // Header bottom border
+        setStroke(doc, BORDER);
+        doc.moveTo(40, tableTop + 22).lineTo(40 + pageWidth, tableTop + 22).lineWidth(1).stroke();
+
+        // Rows
+        let rowY = tableTop + 22;
+        const items = invoice.items || [];
+        items.forEach((item, idx) => {
+            const rowH = item.Product?.description ? 30 : 22;
+
+            // Alternating row background
+            if (idx % 2 === 1) {
+                doc.rect(40, rowY, pageWidth, rowH);
+                setColor(doc, '#fafafa');
+                doc.fill();
             }
 
-            .item-row td {
-                padding: 15px;
-                border-bottom: 1px solid var(--border);
-                font-size: 14px;
+            // Row text
+            doc.fontSize(9).font('Helvetica-Bold');
+            setColor(doc, TEXT_MAIN);
+            const textY = rowY + (rowH - 9) / 2 - (item.Product?.description ? 5 : 0);
+
+            doc.text(`${idx + 1}`, colX.no, textY, { width: 36, align: 'center' });
+            doc.text(item.Product?.name || '', colX.desc, textY, { width: 255 });
+
+            if (item.Product?.description) {
+                doc.fontSize(7.5).font('Helvetica');
+                setColor(doc, TEXT_MUTED);
+                doc.text(item.Product.description, colX.desc, textY + 12, { width: 255 });
             }
 
-            .item-row:nth-child(even) {
-                background-color: #fafafa;
+            doc.fontSize(9).font('Helvetica');
+            setColor(doc, TEXT_MAIN);
+            doc.text(`${item.quantity}`, colX.qty, textY, { width: 45, align: 'center' });
+            doc.text(parseFloat(item.unit_price).toFixed(2), colX.price, textY, { width: 60, align: 'right' });
+            doc.text(
+                item.mrp && parseFloat(item.mrp) > 0 ? parseFloat(item.mrp).toFixed(2) : '—',
+                colX.mrp, textY, { width: 50, align: 'right' }
+            );
+            doc.text(
+                (item.quantity * item.unit_price).toFixed(2),
+                colX.total, textY, { width: 45, align: 'right' }
+            );
+
+            // Row border
+            setStroke(doc, BORDER);
+            doc.moveTo(40, rowY + rowH).lineTo(40 + pageWidth, rowY + rowH).lineWidth(0.5).stroke();
+            rowY += rowH;
+        });
+
+        // ── Totals ───────────────────────────────────────────────────────────
+        const totalsX = 40 + pageWidth - 250;
+        let totY = rowY + 20;
+
+        const drawTotalRow = (label, value, isFinal = false) => {
+            if (isFinal) {
+                setStroke(doc, PRIMARY);
+                doc.moveTo(totalsX, totY - 3).lineTo(40 + pageWidth, totY - 3).lineWidth(1.5).stroke();
+                doc.fontSize(13).font('Helvetica-Bold');
+                setColor(doc, PRIMARY);
+            } else {
+                doc.fontSize(10).font('Helvetica');
+                setColor(doc, TEXT_MUTED);
             }
-
-            .product-name {
-                font-weight: 600;
+            doc.text(label, totalsX, totY, { width: 140 });
+            if (isFinal) {
+                setColor(doc, PRIMARY);
+            } else {
+                setColor(doc, TEXT_MAIN);
             }
+            doc.text(value, totalsX + 140, totY, { width: 110, align: 'right' });
+            totY += isFinal ? 20 : 16;
+        };
 
-            .product-desc {
-                font-size: 12px;
-                color: var(--text-muted);
-                margin-top: 2px;
-            }
+        drawTotalRow('Subtotal', `${currency} ${parseFloat(invoice.subtotal).toFixed(2)}`);
+        if (isUAE) {
+            drawTotalRow('VAT (5%)', `${currency} ${parseFloat(invoice.tax_total).toFixed(2)}`);
+        }
+        if (parseFloat(invoice.discount) > 0) {
+            drawTotalRow('Discount', `-${currency} ${parseFloat(invoice.discount).toFixed(2)}`);
+        }
+        drawTotalRow('Grand Total', `${currency} ${parseFloat(invoice.grand_total).toFixed(2)}`, true);
 
-            .text-center { text-align: center; }
-            .text-right { text-align: right; }
-            .text-left { text-align: left; }
+        // ── Payment info box ──────────────────────────────────────────────────
+        totY += 10;
+        const boxH = parseFloat(invoice.due_amount) > 0 ? 52 : 30;
+        doc.rect(totalsX, totY, 250, boxH);
+        setColor(doc, BG_LIGHT);
+        doc.fill();
 
-            .summary-section {
-                display: flex;
-                justify-content: flex-end;
-            }
+        doc.fontSize(10).font('Helvetica');
+        setColor(doc, TEXT_MAIN);
+        doc.text('Paid Amount:', totalsX + 10, totY + 8);
+        doc.font('Helvetica-Bold');
+        doc.text(`${currency} ${parseFloat(invoice.paid_amount || 0).toFixed(2)}`, totalsX + 10, totY + 8, { width: 230, align: 'right' });
 
-            .totals-table {
-                width: 300px;
-            }
+        if (parseFloat(invoice.due_amount) > 0) {
+            doc.fontSize(10).font('Helvetica');
+            doc.fillColor([220, 38, 38]);
+            doc.text('Balance Due:', totalsX + 10, totY + 30);
+            doc.font('Helvetica-Bold');
+            doc.text(`${currency} ${parseFloat(invoice.due_amount).toFixed(2)}`, totalsX + 10, totY + 30, { width: 230, align: 'right' });
+        }
 
-            .totals-table tr td {
-                padding: 8px 0;
-                font-size: 14px;
-            }
+        // ── Footer ────────────────────────────────────────────────────────────
+        const footerY = doc.page.height - 70;
+        setStroke(doc, BORDER);
+        doc.moveTo(40, footerY).lineTo(40 + pageWidth, footerY).lineWidth(0.5).stroke();
 
-            .total-row {
-                font-weight: 700;
-                font-size: 18px !important;
-                color: var(--primary);
-                border-top: 2px solid var(--primary);
-            }
+        doc.fontSize(11).font('Helvetica-Bold');
+        setColor(doc, TEXT_MAIN);
+        doc.text('Thank you for your business!', 40, footerY + 12, { align: 'center' });
 
-            .payment-info {
-                margin-top: 20px;
-                padding: 15px;
-                background: var(--bg-light);
-                border-radius: 8px;
-                font-size: 13px;
-            }
+        doc.fontSize(9).font('Helvetica');
+        setColor(doc, TEXT_MUTED);
+        doc.text('If you have any questions about this invoice, please contact us.', 40, footerY + 28, { align: 'center' });
 
-            .footer {
-                margin-top: 60px;
-                text-align: center;
-                color: var(--text-muted);
-                font-size: 12px;
-                border-top: 1px solid var(--border);
-                padding-top: 20px;
-            }
-        </style>
-    </head>
-    <body>
-        <div class="invoice-container">
-            <div class="header">
-                <div class="shop-info">
-                    <h1>${shop.name}</h1>
-                    <div class="shop-details">
-                        <div>${shop.address || ''}</div>
-                        <div>${shop.phone || ''} ${shop.email ? '&nbsp; | &nbsp;' + shop.email : ''}</div>
-                        ${isUAE && shop.trn ? `<div style="margin-top: 5px;"><strong>TRN: ${shop.trn}</strong></div>` : ''}
-                    </div>
-                </div>
-                <div class="invoice-meta">
-                    <h2>Invoice</h2>
-                    <div class="meta-item">
-                        <span class="meta-label">ID:</span> #${invoice.id.toString().padStart(6, '0')}
-                    </div>
-                    <div class="meta-item">
-                        <span class="meta-label">Date:</span> ${date}
-                    </div>
-                </div>
-            </div>
-
-            <div class="billing-row">
-                <div class="bill-to">
-                    <h3>Bill To</h3>
-                    <div class="customer-name">${invoice.customer_name || 'Walk-in Customer'}</div>
-                </div>
-            </div>
-
-            <table>
-                <thead>
-                    <tr>
-                        <th style="width: 80px;" class="text-center">#</th>
-                        <th>Item Description</th>
-                        <th style="width: 100px;" class="text-center">Qty</th>
-                        <th style="width: 120px;" class="text-right">Price</th>
-                        <th style="width: 120px;" class="text-right">MRP</th>
-                        <th style="width: 120px;" class="text-right">Total</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${itemsRows}
-                </tbody>
-            </table>
-
-            <div class="summary-section">
-                <table class="totals-table">
-                    <tr>
-                        <td class="text-left meta-label">Subtotal</td>
-                        <td class="text-right">${currency} ${parseFloat(invoice.subtotal).toFixed(2)}</td>
-                    </tr>
-                    ${isUAE ? `
-                    <tr>
-                        <td class="text-left meta-label">VAT (5%)</td>
-                        <td class="text-right">${currency} ${parseFloat(invoice.tax_total).toFixed(2)}</td>
-                    </tr>
-                    ` : ''}
-                    ${parseFloat(invoice.discount) > 0 ? `
-                    <tr>
-                        <td class="text-left meta-label">Discount</td>
-                        <td class="text-right">-${currency} ${parseFloat(invoice.discount).toFixed(2)}</td>
-                    </tr>
-                    ` : ''}
-                    <tr class="total-row">
-                        <td class="text-left">Grand Total</td>
-                        <td class="text-right">${currency} ${parseFloat(invoice.grand_total).toFixed(2)}</td>
-                    </tr>
-                </table>
-            </div>
-
-            <div class="payment-info">
-                <div style="display: flex; justify-content: space-between;">
-                    <span>Paid Amount:</span>
-                    <span style="font-weight: 600;">${currency} ${parseFloat(invoice.paid_amount || 0).toFixed(2)}</span>
-                </div>
-                ${parseFloat(invoice.due_amount) > 0 ? `
-                <div style="display: flex; justify-content: space-between; margin-top: 5px; color: #dc2626;">
-                    <span>Balance Due:</span>
-                    <span style="font-weight: 700;">${currency} ${parseFloat(invoice.due_amount).toFixed(2)}</span>
-                </div>
-                ` : ''}
-            </div>
-
-            <div class="footer">
-                <p style="font-weight: 600; font-size: 14px; margin-bottom: 5px; color: var(--text-main);">Thank you for your business!</p>
-                <p>If you have any questions about this invoice, please contact us.</p>
-            </div>
-        </div>
-    </body>
-    </html>
-    `;
-};
-
-const generateDueReceiptHTML = (payment, invoice, shop) => {
-    const currency = shop.currency;
-    const date = new Date(payment.payment_date).toLocaleDateString('en-GB', {
-        day: '2-digit', month: '2-digit', year: 'numeric'
+        doc.end();
     });
+};
 
-    return `
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <style>
-            :root {
-                --primary: #4f46e5;
-                --text-main: #1e293b;
-                --text-muted: #64748b;
-                --bg-light: #f8fafc;
-                --border: #e2e8f0;
+// ─── Due Payment Receipt PDF ─────────────────────────────────────────────────
+
+const generateDueReceiptPDF = (payment, invoice, shop) => {
+    return new Promise((resolve, reject) => {
+        const doc = new PDFDocument({ size: 'A4', margin: 60, bufferPages: true });
+        const chunks = [];
+
+        doc.on('data', chunk => chunks.push(chunk));
+        doc.on('end', () => resolve(Buffer.concat(chunks)));
+        doc.on('error', reject);
+
+        const pageWidth = doc.page.width - 120;
+        const currency = shop.currency || 'AED';
+        const date = formatDate(payment.payment_date);
+
+        // Header
+        doc.fontSize(22).font('Helvetica-Bold');
+        setColor(doc, PRIMARY);
+        doc.text(shop.name || 'Shop', { align: 'center' });
+
+        if (shop.address) {
+            doc.fontSize(9).font('Helvetica');
+            setColor(doc, TEXT_MUTED);
+            doc.text(shop.address, { align: 'center' });
+        }
+
+        // Divider
+        setStroke(doc, PRIMARY);
+        doc.moveTo(60, doc.y + 8).lineTo(60 + pageWidth, doc.y + 8).lineWidth(2).stroke();
+        doc.moveDown(1.5);
+
+        // Title
+        doc.fontSize(16).font('Helvetica-Bold');
+        setColor(doc, TEXT_MUTED);
+        doc.text('DUE PAYMENT RECEIPT', { align: 'center', characterSpacing: 2 });
+        doc.moveDown(1.5);
+
+        // Info grid (2x2)
+        const infoY = doc.y;
+        const col1 = 60, col2 = 60 + pageWidth / 2;
+        const drawInfoItem = (label, value, x, y) => {
+            doc.fontSize(8).font('Helvetica-Bold');
+            setColor(doc, TEXT_MUTED);
+            doc.text(label.toUpperCase(), x, y);
+            doc.fontSize(12).font('Helvetica-Bold');
+            setColor(doc, TEXT_MAIN);
+            doc.text(value, x, y + 12);
+        };
+
+        drawInfoItem('Receipt No', payment.due_invoice_number || '—', col1, infoY);
+        drawInfoItem('Date', date, col2, infoY);
+        drawInfoItem('Customer', invoice.customer_name || 'Walk-in Customer', col1, infoY + 45);
+        drawInfoItem('Original Invoice', `#${invoice.invoice_number}`, col2, infoY + 45);
+
+        doc.y = infoY + 90;
+        doc.moveDown(0.5);
+
+        // Payment summary box
+        const boxTop = doc.y;
+        const boxW = pageWidth;
+        const summaryRows = [
+            ['Original Grand Total:', `${currency} ${parseFloat(invoice.grand_total).toFixed(2)}`, false],
+            [`Total Paid Previously:`, `${currency} ${parseFloat(parseFloat(invoice.paid_amount) - parseFloat(payment.amount)).toFixed(2)}`, false],
+            ['Amount Collected Now:', `${currency} ${parseFloat(payment.amount).toFixed(2)}`, true],
+        ];
+        const summaryBoxH = summaryRows.length * 28 + 20;
+
+        doc.rect(col1, boxTop, boxW, summaryBoxH);
+        setColor(doc, BG_LIGHT);
+        doc.fill();
+
+        let sumY = boxTop + 12;
+        summaryRows.forEach(([label, value, isTotal]) => {
+            if (isTotal) {
+                setStroke(doc, BORDER);
+                doc.moveTo(col1 + 10, sumY - 4).lineTo(col1 + boxW - 10, sumY - 4).lineWidth(0.5).stroke();
+                doc.fontSize(13).font('Helvetica-Bold');
+                setColor(doc, PRIMARY);
+            } else {
+                doc.fontSize(11).font('Helvetica');
+                setColor(doc, TEXT_MAIN);
             }
-            body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 40px; color: var(--text-main); }
-            .receipt-container { max-width: 600px; margin: auto; border: 1px solid var(--border); padding: 40px; border-radius: 12px; }
-            .header { text-align: center; border-bottom: 2px solid var(--primary); padding-bottom: 20px; margin-bottom: 30px; }
-            .header h1 { margin: 0; color: var(--primary); font-size: 24px; }
-            .receipt-title { text-align: center; font-size: 18px; font-weight: 800; text-transform: uppercase; margin-bottom: 30px; letter-spacing: 0.1em; color: var(--text-muted); }
-            .info-grid { display: grid; grid-template-cols: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
-            .info-item label { display: block; font-[9px]; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px; }
-            .info-item span { font-size: 14px; font-weight: 600; }
-            .payment-summary { background: var(--bg-light); padding: 25px; border-radius: 12px; margin-bottom: 30px; }
-            .summary-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; }
-            .summary-row.total { border-top: 1px solid var(--border); padding-top: 15px; margin-top: 15px; font-weight: 800; font-size: 18px; color: var(--primary); }
-            .footer { text-align: center; font-size: 12px; color: var(--text-muted); margin-top: 40px; }
-        </style>
-    </head>
-    <body>
-        <div class="receipt-container">
-            <div class="header">
-                <h1>${shop.name}</h1>
-                <div style="font-size: 12px; color: var(--text-muted); margin-top: 5px;">${shop.address || ''}</div>
-            </div>
-            
-            <div class="receipt-title">Due Payment Receipt</div>
-            
-            <div class="info-grid">
-                <div class="info-item">
-                    <label>Receipt No</label>
-                    <span>${payment.due_invoice_number}</span>
-                </div>
-                <div class="info-item">
-                    <label>Date</label>
-                    <span>${date}</span>
-                </div>
-                <div class="info-item">
-                    <label>Customer</label>
-                    <span>${invoice.customer_name || 'Walk-in Customer'}</span>
-                </div>
-                <div class="info-item">
-                    <label>Original Invoice</label>
-                    <span>#${invoice.invoice_number}</span>
-                </div>
-            </div>
+            doc.text(label, col1 + 12, sumY);
+            if (isTotal) setColor(doc, PRIMARY);
+            doc.text(value, col1 + 12, sumY, { width: boxW - 24, align: 'right' });
+            sumY += 28;
+        });
 
-            <div class="payment-summary">
-                <div class="summary-row">
-                    <span>Original Grand Total:</span>
-                    <span>${currency} ${parseFloat(invoice.grand_total).toFixed(2)}</span>
-                </div>
-                <div class="summary-row">
-                    <span>Total Paid Previously:</span>
-                    <span>${currency} ${parseFloat(parseFloat(invoice.paid_amount) - parseFloat(payment.amount)).toFixed(2)}</span>
-                </div>
-                <div class="summary-row total">
-                    <span>Amount Collected Now:</span>
-                    <span>${currency} ${parseFloat(payment.amount).toFixed(2)}</span>
-                </div>
-                <div class="summary-row" style="margin-top: 15px; font-weight: 700; color: #dc2626;">
-                    <span>Remaining Balance:</span>
-                    <span>${currency} ${parseFloat(payment.remaining_balance).toFixed(2)}</span>
-                </div>
-            </div>
+        // Remaining balance
+        if (parseFloat(payment.remaining_balance) > 0) {
+            doc.fontSize(11).font('Helvetica-Bold');
+            doc.fillColor([220, 38, 38]);
+            const remY = boxTop + summaryBoxH + 16;
+            doc.text('Remaining Balance:', col1, remY);
+            doc.text(`${currency} ${parseFloat(payment.remaining_balance).toFixed(2)}`, col1, remY, { width: boxW, align: 'right' });
+        }
 
-            <div class="info-item" style="margin-bottom: 20px;">
-                <label>Payment Method</label>
-                <span style="text-transform: uppercase;">${payment.payment_method}</span>
-            </div>
+        // Payment method
+        doc.moveDown(3);
+        doc.fontSize(10).font('Helvetica-Bold');
+        setColor(doc, TEXT_MUTED);
+        doc.text('PAYMENT METHOD', { align: 'left' });
+        doc.fontSize(13).font('Helvetica-Bold');
+        setColor(doc, TEXT_MAIN);
+        doc.text((payment.payment_method || 'Cash').toUpperCase());
 
-            <div class="footer">
-                <p>This is a computer generated receipt for your due payment.</p>
-                <p>Thank you for your business!</p>
-            </div>
-        </div>
-    </body>
-    </html>
-    `;
-};
+        // Footer
+        const footerY = doc.page.height - 80;
+        setStroke(doc, BORDER);
+        doc.moveTo(60, footerY).lineTo(60 + pageWidth, footerY).lineWidth(0.5).stroke();
 
-const generateInvoicePDF = async (invoice, shop) => {
-    const html = generateHTML(invoice, shop);
-    return await renderPDF(html);
-};
+        doc.fontSize(9).font('Helvetica');
+        setColor(doc, TEXT_MUTED);
+        doc.text('This is a computer generated receipt for your due payment.', 60, footerY + 12, { align: 'center', width: pageWidth });
+        doc.text('Thank you for your business!', 60, footerY + 26, { align: 'center', width: pageWidth });
 
-const generateDueReceiptPDF = async (payment, invoice, shop) => {
-    const html = generateDueReceiptHTML(payment, invoice, shop);
-    return await renderPDF(html);
-};
-
-const renderPDF = async (html) => {
-    const isProduction = process.env.NODE_ENV === 'production';
-    const browser = await puppeteer.launch({
-        headless: 'new',
-        executablePath: isProduction
-            ? '/usr/bin/google-chrome-stable'
-            : undefined, // use puppeteer's bundled Chrome in dev
-        args: [
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage',
-            '--disable-gpu',
-            '--no-zygote',
-            '--single-process'
-        ]
+        doc.end();
     });
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'load' });
-    const pdfBuffer = await page.pdf({
-        format: 'A4',
-        printBackground: true,
-        margin: { top: '20px', bottom: '20px', left: '20px', right: '20px' }
-    });
-    await browser.close();
-    return pdfBuffer;
 };
 
 module.exports = { generateInvoicePDF, generateDueReceiptPDF };

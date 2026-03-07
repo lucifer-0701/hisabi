@@ -2,7 +2,7 @@
 
 **Hisabi** is a full-stack SaaS POS and inventory management system built for small retail shops in the UAE and Kuwait.
 
-🌐 **Live:** [https://hisabi-qhtk.onrender.com](https://hisabi-qhtk.onrender.com)
+🌐 **Live:** *Coming soon — deploying to Vercel*
 
 ---
 
@@ -29,7 +29,7 @@
 - Node.js + Express 5
 - PostgreSQL + Sequelize ORM
 - JWT Authentication
-- Puppeteer (PDF generation)
+- PDFKit (PDF generation)
 - Multer (file uploads)
 
 **Frontend**
@@ -41,8 +41,8 @@
 - React Router v7
 
 **Deployment**
-- [Render.com](https://render.com) — full-stack monorepo (free tier)
-- PostgreSQL managed by Render
+- [Vercel](https://vercel.com) — frontend (React/Vite SPA) + backend (Serverless Node.js)
+- [Supabase](https://supabase.com) — managed PostgreSQL database
 
 ---
 
@@ -51,22 +51,23 @@
 ```
 hisabi/
 ├── backend/
-│   └── src/
-│       ├── config/        # Database config (Sequelize + SSL)
-│       ├── controllers/   # Business logic per feature
-│       ├── middleware/     # Auth, upload, validation
-│       ├── models/        # Sequelize models
-│       ├── routes/        # Express API routes
-│       ├── services/      # PDF generation (Puppeteer)
-│       └── utils/         # JWT, bcrypt helpers
+│   ├── src/
+│   │   ├── config/        # Database config (Sequelize + SSL)
+│   │   ├── controllers/   # Business logic per feature
+│   │   ├── middleware/     # Auth, upload, validation
+│   │   ├── models/        # Sequelize models
+│   │   ├── routes/        # Express API routes
+│   │   ├── services/      # PDF generation (PDFKit)
+│   │   └── utils/         # JWT, bcrypt helpers
+│   └── vercel.json        # Vercel serverless config
 ├── frontend/
-│   └── src/
-│       ├── api/           # Axios instance
-│       ├── components/    # Layout, ProtectedRoute
-│       ├── context/       # AuthContext
-│       ├── pages/         # All page components
-│       └── public/locales # en / ar translation files
-├── render.yaml            # Render deployment config
+│   ├── src/
+│   │   ├── api/           # Axios instance
+│   │   ├── components/    # Layout, ProtectedRoute
+│   │   ├── context/       # AuthContext
+│   │   ├── pages/         # All page components
+│   │   └── public/locales # en / ar translation files
+│   └── vercel.json        # Vercel SPA routing config
 └── package.json           # Root build scripts
 ```
 
@@ -76,7 +77,7 @@ hisabi/
 
 ### Prerequisites
 - Node.js v20+
-- PostgreSQL (local instance)
+- PostgreSQL (local instance or Supabase connection string)
 
 ### Setup
 
@@ -87,12 +88,13 @@ npm install
 # 2. Set up backend
 cd backend
 npm install
-cp .env.example .env   # Fill in DATABASE_URL, JWT_SECRET, NODE_ENV=development
+cp .env.example .env   # Fill in DATABASE_URL, JWT_SECRET, FRONTEND_URL
 cd ..
 
 # 3. Set up frontend
 cd frontend
 npm install
+cp .env.example .env.local   # Fill in VITE_API_URL=http://localhost:5000
 cd ..
 
 # 4. Run both dev servers concurrently
@@ -103,29 +105,62 @@ Frontend runs at `http://localhost:5173` and backend at `http://localhost:5000`.
 
 ---
 
-## Deployment (Render.com)
+## Deployment (Vercel + Supabase)
 
-The project includes `render.yaml` for one-click Blueprint deployment:
+### 1. Set up Supabase Database
 
-1. Go to [Render Dashboard](https://dashboard.render.com) → **New** → **Blueprint**
-2. Connect the `lucifer-0701/hisabi` GitHub repo
-3. Render will auto-create:
-   - A **Node.js web service** (build + serve frontend, run backend)
-   - A **free PostgreSQL database** (linked via `DATABASE_URL`)
-4. Set `JWT_SECRET` in the environment (or let Render auto-generate it)
-5. Deploy — the app will be live at `https://<name>.onrender.com`
+1. Create a project at [supabase.com](https://supabase.com)
+2. Go to **Project Settings → Database → Connection String → URI**
+3. Copy the `DATABASE_URL` — you'll need it for the backend
 
-> ⚠️ Free tier sleeps after inactivity. First request may take ~50 seconds.
+### 2. Deploy Backend to Vercel
+
+1. Go to [vercel.com](https://vercel.com) → **Add New → Project**
+2. Import the `lucifer-0701/hisabi` GitHub repo
+3. Set **Root Directory** to `backend`
+4. Add these **Environment Variables**:
+
+| Variable | Value |
+|---|---|
+| `DATABASE_URL` | Your Supabase connection string |
+| `JWT_SECRET` | A long random secret string |
+| `NODE_ENV` | `production` |
+| `FRONTEND_URL` | Your frontend Vercel URL (e.g. `https://hisabi.vercel.app`) |
+
+5. Deploy — note the backend URL (e.g. `https://hisabi-backend.vercel.app`)
+
+### 3. Deploy Frontend to Vercel
+
+1. Go to [vercel.com](https://vercel.com) → **Add New → Project**
+2. Import the same repo, set **Root Directory** to `frontend`
+3. Add this **Environment Variable**:
+
+| Variable | Value |
+|---|---|
+| `VITE_API_URL` | Your backend Vercel URL (from step 2) |
+
+4. Deploy — the app will be live at your Vercel frontend URL
+
+> ✅ No cold-start sleep on Vercel. Supabase free tier includes 500 MB PostgreSQL.
 
 ---
 
 ## Environment Variables
 
+### Backend (`backend/.env`)
+
 | Variable | Description |
 |---|---|
-| `DATABASE_URL` | PostgreSQL connection string (auto-set on Render) |
+| `DATABASE_URL` | Supabase PostgreSQL connection string |
 | `JWT_SECRET` | Secret key for JWT signing |
-| `NODE_ENV` | Set to `production` on Render |
+| `NODE_ENV` | Set to `production` on Vercel |
+| `FRONTEND_URL` | Frontend URL for CORS (e.g. `https://hisabi.vercel.app`) |
+
+### Frontend (`frontend/.env.local`)
+
+| Variable | Description |
+|---|---|
+| `VITE_API_URL` | Backend API base URL (e.g. `https://hisabi-backend.vercel.app`) |
 
 ---
 

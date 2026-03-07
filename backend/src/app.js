@@ -24,9 +24,24 @@ const duePaymentRoutes = require('./routes/duePaymentRoutes');
 
 const app = express();
 
-// Middleware
+// CORS — allow requests from frontend (Vercel) or localhost in dev
+const allowedOrigins = [
+    process.env.FRONTEND_URL,
+    'http://localhost:5173',
+    'http://localhost:3000',
+].filter(Boolean);
+
+app.use(cors({
+    origin: (origin, callback) => {
+        // Allow requests with no origin (e.g. Postman, server-to-server)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes(origin)) return callback(null, true);
+        callback(new Error(`CORS: Origin ${origin} not allowed`));
+    },
+    credentials: true,
+}));
+
 app.use(express.json());
-app.use(cors());
 app.use(helmet({ crossOriginResourcePolicy: false }));
 app.use(morgan('dev'));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
@@ -47,13 +62,7 @@ app.use('/api/discount-codes', discountCodeRoutes);
 app.use('/api/targets', salesTargetRoutes);
 app.use('/api/due-payments', duePaymentRoutes);
 
-// Serve built React frontend in production
-const frontendDist = path.join(__dirname, '../../frontend/dist');
-app.use(express.static(frontendDist));
-
-// React Router fallback — serve index.html for all non-API routes (Express 5 syntax)
-app.get('/{*path}', (req, res) => {
-    res.sendFile(path.join(frontendDist, 'index.html'));
-});
+// Health check
+app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
 module.exports = app;
