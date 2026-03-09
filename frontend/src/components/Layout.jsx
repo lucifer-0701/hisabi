@@ -6,8 +6,9 @@ import {
     LayoutDashboard, ShoppingCart, Package, FileText, BarChart2,
     Users, Truck, Wallet, RotateCcw, ShoppingBag, User,
     LogOut, Menu, X, ChevronRight, Store,
-    PackageCheck, Ticket, ClipboardList, Target, Globe, HelpCircle, Mail
+    PackageCheck, Ticket, ClipboardList, Target, Globe, HelpCircle, Mail, Crown
 } from 'lucide-react';
+import PricingModal from './PricingModal';
 
 
 const NAV = [
@@ -236,6 +237,7 @@ const Layout = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const [mobileOpen, setMobileOpen] = useState(false);
+    const [showPricing, setShowPricing] = useState(false);
 
     useEffect(() => {
         document.documentElement.dir = isRTL ? 'rtl' : 'ltr';
@@ -296,7 +298,16 @@ const Layout = () => {
                         </h2>
                     </div>
 
-                    <UserDropdown user={user} handleLogout={handleLogout} isRTL={isRTL} t={t} />
+                    <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                        <button
+                            onClick={() => setShowPricing(true)}
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-black uppercase tracking-wider rounded-xl hover:from-blue-700 hover:to-indigo-700 shadow-md shadow-blue-600/20 hover:shadow-lg hover:shadow-blue-600/30 transition-all duration-200 active:scale-[0.96]"
+                        >
+                            <Crown className="w-3.5 h-3.5" />
+                            Upgrade
+                        </button>
+                        <UserDropdown user={user} handleLogout={handleLogout} isRTL={isRTL} t={t} />
+                    </div>
                 </header>
 
                 {/* Page content */}
@@ -324,6 +335,9 @@ const Layout = () => {
                     </footer>
                 )}
             </div>
+
+            {/* Pricing Modal */}
+            <PricingModal isOpen={showPricing} onClose={() => setShowPricing(false)} />
         </div>
     );
 };
