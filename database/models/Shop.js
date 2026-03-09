@@ -20,10 +20,24 @@ const Shop = sequelize.define('Shop', {
         allowNull: true
     },
     currency: {
-        type: DataTypes.ENUM('AED', 'KWD'),
+        type: DataTypes.ENUM('AED', 'KWD', 'INR'),
         allowNull: false
     },
     vat_enabled: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+        allowNull: false
+    },
+    country: {
+        type: DataTypes.STRING(2),
+        allowNull: false,
+        defaultValue: 'AE'   // Existing shops safely default to UAE
+    },
+    gstin: {
+        type: DataTypes.STRING(15),
+        allowNull: true       // GST Registration Number (India only)
+    },
+    gst_enabled: {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
         allowNull: false

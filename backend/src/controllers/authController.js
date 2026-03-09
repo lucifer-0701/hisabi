@@ -8,8 +8,11 @@ const registerSchema = Joi.object({
     shop_name: Joi.string().required(),
     address: Joi.string().allow('', null),
     trn: Joi.string().allow('', null),
-    currency: Joi.string().valid('AED', 'KWD').required(),
+    gstin: Joi.string().length(15).allow('', null),
+    country: Joi.string().valid('AE', 'KW', 'IN').default('AE'),
+    currency: Joi.string().valid('AED', 'KWD', 'INR').required(),
     vat_enabled: Joi.boolean().required(),
+    gst_enabled: Joi.boolean().default(false),
     phone: Joi.string().allow('', null),
     email: Joi.string().email().allow('', null),
     username: Joi.string().min(3).max(30).required(),
@@ -41,7 +44,7 @@ const updateProfileSchema = Joi.object({
 const register = async (req, res) => {
     const t = await sequelize.transaction();
     try {
-        const { shop_name, address, trn, currency, vat_enabled, phone, email, username, password } = req.body;
+        const { shop_name, address, trn, gstin, country, currency, vat_enabled, gst_enabled, phone, email, username, password } = req.body;
 
         // Check if username exists globally
         const existingUser = await User.findOne({ where: { username } });
@@ -57,13 +60,25 @@ const register = async (req, res) => {
             return res.status(400).json({ error: 'Shop name already exists' });
         }
 
+        // India-specific: validate phone format (+91 followed by 10-digit mobile number)
+        if (country === 'IN' && phone) {
+            const indianPhoneRegex = /^\+91[6-9]\d{9}$/;
+            if (!indianPhoneRegex.test(phone)) {
+                await t.rollback();
+                return res.status(400).json({ error: 'Indian phone must be +91 followed by 10 digits (e.g. +919876543210)' });
+            }
+        }
+
         // Create Shop
         const shop = await Shop.create({
             name: shop_name,
             address,
             trn,
+            gstin: gstin || null,
+            country: country || 'AE',
             currency,
             vat_enabled,
+            gst_enabled: gst_enabled || false,
             phone,
             email
         }, { transaction: t });

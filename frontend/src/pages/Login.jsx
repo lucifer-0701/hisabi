@@ -17,10 +17,13 @@ const Login = () => {
         password: '',
         address: '',
         trn: '',
+        gstin: '',
+        country: 'AE',
         phone: '',
         email: '',
         currency: 'AED',
-        vat_enabled: false
+        vat_enabled: false,
+        gst_enabled: false
     });
     const [error, setError] = useState('');
     const { login, register } = useAuth();
@@ -32,6 +35,28 @@ const Login = () => {
         const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
         setFormData({ ...formData, [e.target.name]: value });
     };
+
+    // Region selector — auto-sets currency and tax mode
+    const REGIONS = [
+        { country: 'AE', label: '🇦🇪 UAE (AED)', currency: 'AED', vat: true },
+        { country: 'KW', label: '🇰🇼 Kuwait (KWD)', currency: 'KWD', vat: false },
+        { country: 'IN', label: '🇮🇳 India (INR)', currency: 'INR', vat: false },
+    ];
+
+    const handleRegionChange = (e) => {
+        const region = REGIONS.find(r => r.country === e.target.value);
+        if (region) {
+            setFormData(prev => ({
+                ...prev,
+                country: region.country,
+                currency: region.currency,
+                vat_enabled: region.vat,
+                gst_enabled: region.country === 'IN'
+            }));
+        }
+    };
+
+    const isIndia = formData.country === 'IN';
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -229,52 +254,65 @@ const Login = () => {
                                 </div>
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {/* Country / Region Selector */}
                                     <div className="relative group">
-                                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1 mb-1.5 block">{t('login.trn_label')}</label>
-                                        <div className="relative">
-                                            <Hash className={`absolute ${isRTL ? 'right-4' : 'left-4'} top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-blue-500 transition-colors`} />
-                                            <input
-                                                name="trn"
-                                                type="text"
-                                                value={formData.trn}
-                                                onChange={handleChange}
-                                                className={`w-full ${isRTL ? 'pr-12 pl-4 text-right' : 'pl-12 pr-4'} py-3.5 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-medium text-gray-900 placeholder:text-gray-400`}
-                                                placeholder={t('login.trn_placeholder')}
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="relative group">
-                                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1 mb-1.5 block">{t('login.currency_label')}</label>
+                                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1 mb-1.5 block">Region</label>
                                         <div className="relative">
                                             <Coins className={`absolute ${isRTL ? 'right-4' : 'left-4'} top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-blue-500 transition-colors`} />
                                             <select
-                                                name="currency"
-                                                value={formData.currency}
-                                                onChange={handleChange}
+                                                name="country"
+                                                value={formData.country}
+                                                onChange={handleRegionChange}
                                                 className={`w-full ${isRTL ? 'pr-12 pl-4 text-right' : 'pl-12 pr-4'} py-3.5 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-black text-gray-900 appearance-none`}
                                             >
-                                                <option value="AED">AED (Emirates)</option>
-                                                <option value="KWD">KWD (Kuwait)</option>
+                                                {REGIONS.map(r => (
+                                                    <option key={r.country} value={r.country}>{r.label}</option>
+                                                ))}
                                             </select>
+                                        </div>
+                                    </div>
+                                    {/* Tax ID: TRN for UAE/KW, GSTIN for India */}
+                                    <div className="relative group">
+                                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1 mb-1.5 block">
+                                            {isIndia ? 'GSTIN (Optional)' : t('login.trn_label')}
+                                        </label>
+                                        <div className="relative">
+                                            <Hash className={`absolute ${isRTL ? 'right-4' : 'left-4'} top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-blue-500 transition-colors`} />
+                                            <input
+                                                name={isIndia ? 'gstin' : 'trn'}
+                                                type="text"
+                                                maxLength={isIndia ? 15 : undefined}
+                                                value={isIndia ? formData.gstin : formData.trn}
+                                                onChange={handleChange}
+                                                className={`w-full ${isRTL ? 'pr-12 pl-4 text-right' : 'pl-12 pr-4'} py-3.5 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-medium text-gray-900 placeholder:text-gray-400 uppercase`}
+                                                placeholder={isIndia ? '15-char GSTIN' : t('login.trn_placeholder')}
+                                            />
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className={`flex items-center gap-3 p-4 bg-blue-50/50 rounded-2xl border border-blue-100/50 group cursor-pointer ${isRTL ? 'flex-row-reverse' : ''}`} onClick={() => setFormData({ ...formData, vat_enabled: !formData.vat_enabled })}>
-                                    <div className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all ${formData.vat_enabled ? 'bg-blue-600 text-white' : 'bg-white border-2 border-gray-200'}`}>
-                                        {formData.vat_enabled && <Percent className="w-4 h-4" />}
+                                {/* GST toggle for India, VAT toggle for UAE */}
+                                {!isIndia && (
+                                    <div className={`flex items-center gap-3 p-4 bg-blue-50/50 rounded-2xl border border-blue-100/50 group cursor-pointer ${isRTL ? 'flex-row-reverse' : ''}`} onClick={() => setFormData({ ...formData, vat_enabled: !formData.vat_enabled })}>
+                                        <div className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all ${formData.vat_enabled ? 'bg-blue-600 text-white' : 'bg-white border-2 border-gray-200'}`}>
+                                            {formData.vat_enabled && <Percent className="w-4 h-4" />}
+                                        </div>
+                                        <div className={`flex-1 ${isRTL ? 'text-right' : ''}`}>
+                                            <span className="block text-sm font-black text-gray-900">{t('login.vat_label')}</span>
+                                            <p className="text-xs font-medium text-blue-600/80">{t('login.vat_sub')}</p>
+                                        </div>
+                                        <input type="checkbox" className="hidden" checked={formData.vat_enabled} readOnly />
                                     </div>
-                                    <div className={`flex-1 ${isRTL ? 'text-right' : ''}`}>
-                                        <span className="block text-sm font-black text-gray-900">{t('login.vat_label')}</span>
-                                        <p className="text-xs font-medium text-blue-600/80">{t('login.vat_sub')}</p>
+                                )}
+                                {isIndia && (
+                                    <div className="p-4 bg-orange-50 rounded-2xl border border-orange-100">
+                                        <div className="flex items-center gap-2">
+                                            <Percent className="w-4 h-4 text-orange-500" />
+                                            <span className="text-sm font-black text-gray-900">GST 18% Auto-Applied</span>
+                                        </div>
+                                        <p className="text-xs font-medium text-orange-600/80 mt-1">Indian businesses are subject to 18% GST on subscriptions.</p>
                                     </div>
-                                    <input
-                                        type="checkbox"
-                                        className="hidden"
-                                        checked={formData.vat_enabled}
-                                        readOnly
-                                    />
-                                </div>
+                                )}
                             </div>
                         )}
 

@@ -2,18 +2,25 @@ import React, { useState, useEffect } from 'react';
 import { X, Check, Crown, Star, Zap, Sparkles, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
+import RazorpayCheckout from './RazorpayCheckout';
+
+// Region-aware pricing
+const getPricing = (country) => {
+    const isIN = country === 'IN';
+    const isKW = country === 'KW';
+    return {
+        gold: isIN ? '₹499' : isKW ? 'KWD 15' : 'AED 49',
+        premium: isIN ? '₹999' : isKW ? 'KWD 29' : 'AED 99',
+    };
+};
 
 const plans = [
     {
         name: 'Free',
-        price: '₹0',
+        price: (pricing) => pricing ? '₹0' : '₹0',
         period: '/month',
         description: 'For getting started',
-        features: [
-            'Basic tracking',
-            'Standard dashboard',
-            'Up to 50 products',
-        ],
+        features: ['Basic tracking', 'Standard dashboard', 'Up to 50 products'],
         cta: 'Current Plan',
         disabled: true,
         style: 'free',
@@ -21,16 +28,11 @@ const plans = [
     },
     {
         name: 'Gold',
-        price: '₹499',
+        price: (pricing) => pricing.gold,
         period: '/month',
         description: 'Best for growing businesses',
         badge: 'Recommended',
-        features: [
-            'Advanced analytics',
-            'Unlimited products',
-            'Multi-user access',
-            'Export reports (CSV/PDF)',
-        ],
+        features: ['Advanced analytics', 'Unlimited products', 'Multi-user access', 'Export reports (CSV/PDF)'],
         cta: 'Upgrade to Gold',
         disabled: false,
         style: 'gold',
@@ -38,15 +40,10 @@ const plans = [
     },
     {
         name: 'Premium',
-        price: '₹999',
+        price: (pricing) => pricing.premium,
         period: '/month',
         description: 'For power users',
-        features: [
-            'Everything in Gold',
-            'Unlimited history',
-            'Priority support',
-            'Custom branding',
-        ],
+        features: ['Everything in Gold', 'Unlimited history', 'Priority support', 'Custom branding'],
         cta: 'Upgrade to Premium',
         disabled: false,
         style: 'premium',
@@ -77,9 +74,12 @@ const cardStyles = {
 
 const PricingModal = ({ isOpen, onClose }) => {
     const { user, setUser } = useAuth();
-    const [upgrading, setUpgrading] = useState(null); // stores plan name being upgraded to
+    const [upgrading, setUpgrading] = useState(null);
 
     const currentPlan = user?.shop?.plan || 'free';
+    const shopCountry = user?.shop?.country || 'AE';
+    const isIndia = shopCountry === 'IN';
+    const pricing = getPricing(shopCountry);
 
     const handleUpgrade = async (planName) => {
         if (planName === currentPlan) return;
@@ -191,7 +191,9 @@ const PricingModal = ({ isOpen, onClose }) => {
 
                                 {/* Price */}
                                 <div className="flex items-baseline gap-1 mb-6">
-                                    <span className="text-4xl font-black text-slate-900 tracking-tight">{plan.price}</span>
+                                    <span className="text-4xl font-black text-slate-900 tracking-tight">
+                                        {typeof plan.price === 'function' ? plan.price(pricing) : plan.price}
+                                    </span>
                                     <span className="text-sm text-slate-400 font-semibold">{plan.period}</span>
                                 </div>
 
@@ -212,27 +214,34 @@ const PricingModal = ({ isOpen, onClose }) => {
                                     ))}
                                 </ul>
 
-                                {/* CTA */}
-                                <button
-                                    onClick={() => handleUpgrade(plan.style)}
-                                    disabled={plan.style === currentPlan || !!upgrading}
-                                    className={`
+                                {/* CTA — Razorpay for India, mock API for others */}
+                                {isIndia && plan.style !== 'free' && plan.style !== currentPlan ? (
+                                    <RazorpayCheckout
+                                        plan={plan.style}
+                                        onSuccess={() => setTimeout(onClose, 600)}
+                                    />
+                                ) : (
+                                    <button
+                                        onClick={() => handleUpgrade(plan.style)}
+                                        disabled={plan.style === currentPlan || !!upgrading}
+                                        className={`
                                         w-full py-3 rounded-xl text-sm font-black transition-all duration-200 flex items-center justify-center gap-2
                                         ${plan.style === currentPlan
-                                            ? 'border-2 border-slate-200 text-slate-400 cursor-not-allowed'
-                                            : style.btn
-                                        }
+                                                ? 'border-2 border-slate-200 text-slate-400 cursor-not-allowed'
+                                                : style.btn
+                                            }
                                         ${upgrading === plan.style ? 'opacity-80' : ''}
                                     `}
-                                >
-                                    {upgrading === plan.style ? (
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                    ) : plan.style === currentPlan ? (
-                                        'Current Plan'
-                                    ) : (
-                                        plan.cta
-                                    )}
-                                </button>
+                                    >
+                                        {upgrading === plan.style ? (
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                        ) : plan.style === currentPlan ? (
+                                            'Current Plan'
+                                        ) : (
+                                            plan.cta
+                                        )}
+                                    </button>
+                                )}
                             </div>
                         );
                     })}
@@ -241,7 +250,10 @@ const PricingModal = ({ isOpen, onClose }) => {
                 {/* Footer note */}
                 <div className="px-8 pb-6 text-center">
                     <p className="text-xs text-slate-400 font-medium">
-                        All plans include a 14-day free trial · Cancel anytime
+                        {isIndia
+                            ? 'All prices include 18% GST · Secure payments via Razorpay'
+                            : 'All plans include a 14-day free trial · Cancel anytime'
+                        }
                     </p>
                 </div>
             </div>
