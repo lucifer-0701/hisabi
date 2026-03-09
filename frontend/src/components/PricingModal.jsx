@@ -77,7 +77,8 @@ const PricingModal = ({ isOpen, onClose }) => {
     const [upgrading, setUpgrading] = useState(null);
 
     const currentPlan = user?.shop?.plan || 'free';
-    const shopCountry = user?.shop?.country || 'AE';
+    // Fallback detection: Check country, then currency, then default to AE
+    const shopCountry = user?.shop?.country || (user?.shop?.currency === 'INR' ? 'IN' : user?.shop?.currency === 'KWD' ? 'KW' : 'AE');
     const isIndia = shopCountry === 'IN';
     const pricing = getPricing(shopCountry);
 

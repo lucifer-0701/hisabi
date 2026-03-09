@@ -22,6 +22,7 @@ const StockAdjustments = lazy(() => import('./pages/StockAdjustments'));
 const DiscountCodes = lazy(() => import('./pages/DiscountCodes'));
 const EndOfDay = lazy(() => import('./pages/EndOfDay'));
 const SalesTargets = lazy(() => import('./pages/SalesTargets'));
+const Staff = lazy(() => import('./pages/Staff'));
 const Help = lazy(() => import('./pages/Help'));
 
 const PageLoader = () => (
@@ -62,6 +63,7 @@ function App() {
               <Route path="stock-adjustments" element={<StockAdjustments />} />
               <Route path="discount-codes" element={<DiscountCodes />} />
               <Route path="targets" element={<SalesTargets />} />
+              <Route path="staff" element={<Staff />} />
               <Route path="end-of-day" element={<EndOfDay />} />
               <Route path="help" element={<Help />} />
             </Route>

@@ -62,7 +62,8 @@
         "help": "Help & FAQ",
         "profile": "Profile",
         "inventory": "Inventory",
-        "categories": "Categories"
+        "categories": "Categories",
+        "staff": "Staff Management"
     },
     "common": {
         "language": "Language",
@@ -359,6 +360,29 @@
     "profile": {
         "title": "Profile",
         "username": "Username"
+    },
+    "staff": {
+        "title": "Staff Management",
+        "subtitle": "Manage your team and their access levels",
+        "add_button": "Add Staff Member",
+        "total_staff": "Total Staff",
+        "active_roles": "Active Roles",
+        "search_placeholder": "Search staff members...",
+        "table": {
+            "username": "Username",
+            "role": "Role",
+            "date_added": "Date Added",
+            "actions": "Actions"
+        },
+        "no_results": "No staff members found",
+        "modal": {
+            "title": "Add Staff Member",
+            "subtitle": "Create a new login for your team",
+            "username": "Username",
+            "password": "Password",
+            "submit": "Create Staff Account"
+        },
+        "delete_confirm": "Are you sure you want to remove this staff member?"
     },
     "login": {
         "shop_name": "Enter your shop name",

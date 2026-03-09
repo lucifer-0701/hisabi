@@ -41,6 +41,7 @@ const NAV = [
             { name: 'nav.stock_adj', href: '/stock-adjustments', icon: PackageCheck },
             { name: 'nav.discounts', href: '/discount-codes', icon: Ticket },
             { name: 'nav.targets', href: '/targets', icon: Target },
+            { name: 'nav.staff', href: '/staff', icon: Users },
         ]
     },
     {

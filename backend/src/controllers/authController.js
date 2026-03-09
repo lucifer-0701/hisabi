@@ -222,6 +222,38 @@ const createStaff = async (req, res) => {
     }
 };
 
+const getStaff = async (req, res) => {
+    try {
+        const shop_id = req.user.shop_id;
+        const staff = await User.findAll({
+            where: { shop_id, role: 'staff' },
+            attributes: ['id', 'username', 'role', 'created_at']
+        });
+        res.json(staff);
+    } catch (error) {
+        console.error('Get Staff Error:', error);
+        res.status(500).json({ error: 'Failed to fetch staff' });
+    }
+};
+
+const deleteStaff = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const shop_id = req.user.shop_id;
+
+        const user = await User.findOne({ where: { id, shop_id, role: 'staff' } });
+        if (!user) {
+            return res.status(404).json({ error: 'Staff member not found' });
+        }
+
+        await user.destroy();
+        res.json({ message: 'Staff member deleted successfully' });
+    } catch (error) {
+        console.error('Delete Staff Error:', error);
+        res.status(500).json({ error: 'Failed to delete staff' });
+    }
+};
+
 const getProfile = async (req, res) => {
     try {
         const user_id = req.user.id;
@@ -309,6 +341,8 @@ module.exports = {
     register,
     login,
     createStaff,
+    getStaff,
+    deleteStaff,
     getProfile,
     updateProfile,
     registerSchema,
