@@ -14,7 +14,6 @@ import {
     Calendar,
     ArrowUpRight,
     ArrowDownRight,
-    ArrowDownRight,
     Wallet,
     PieChart,
     Clock,
@@ -186,8 +185,8 @@ const Reports = () => {
                         <button
                             onClick={() => exportData('csv')}
                             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-sm ${isGoldOrAbove
-                                    ? 'bg-slate-900 text-white hover:bg-slate-800'
-                                    : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed hover:bg-slate-200'
+                                ? 'bg-slate-900 text-white hover:bg-slate-800'
+                                : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed hover:bg-slate-200'
                                 }`}
                         >
                             <Download className="w-4 h-4" /> CSV
@@ -196,8 +195,8 @@ const Reports = () => {
                         <button
                             onClick={() => exportData('pdf')}
                             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-sm ${isGoldOrAbove
-                                    ? 'bg-white border border-slate-200 text-slate-900 hover:bg-slate-50'
-                                    : 'bg-slate-50 text-slate-300 border border-slate-200 cursor-not-allowed'
+                                ? 'bg-white border border-slate-200 text-slate-900 hover:bg-slate-50'
+                                : 'bg-slate-50 text-slate-300 border border-slate-200 cursor-not-allowed'
                                 }`}
                         >
                             <Download className="w-4 h-4" /> PDF
