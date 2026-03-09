@@ -164,8 +164,21 @@ const listInvoices = async (req, res) => {
         const { page = 1, limit = 10 } = req.query;
         const offset = (page - 1) * limit;
 
+        // Fetch Shop to check plan
+        const shop = await Shop.findByPk(shop_id);
+        const { Op } = require('sequelize');
+
+        let where = { shop_id };
+
+        // Phase 7: History Retention (Premium gets unlimited, others 6 months)
+        if (shop.plan !== 'premium') {
+            const sixMonthsAgo = new Date();
+            sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+            where.created_at = { [Op.gte]: sixMonthsAgo };
+        }
+
         const invoices = await Invoice.findAndCountAll({
-            where: { shop_id },
+            where,
             limit: parseInt(limit),
             offset: parseInt(offset),
             order: [['created_at', 'DESC']],

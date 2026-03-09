@@ -44,7 +44,7 @@ const EndOfDay = () => {
 
 ${report.topProducts.length > 0 ? '🔝 Top Products:\n' + report.topProducts.map((p, i) => `${i + 1}. ${p.name} — ${p.qty} units`).join('\n') : ''}
 
-— Sent from Hisabi POS`;
+— Sent from Hisabi-POS`;
         window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
     };
 

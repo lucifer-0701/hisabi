@@ -339,6 +339,8 @@ const Products = () => {
     const { t } = useTranslation();
     const isAdmin = user?.role === 'admin';
     const currency = user?.shop?.currency;
+    const currentPlan = user?.shop?.plan || 'free';
+    const isFreePlan = currentPlan === 'free';
 
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);
@@ -351,6 +353,7 @@ const Products = () => {
     const [editingProduct, setEditingProduct] = useState(null);
     const [renamingCatId, setRenamingCatId] = useState(null);
     const [renameValue, setRenameValue] = useState('');
+    const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
 
     const startRename = (cat, e) => { e.stopPropagation(); setRenamingCatId(cat.id); setRenameValue(cat.name); };
     const saveRename = async (catId, e) => {
@@ -435,80 +438,112 @@ const Products = () => {
                 )}
             </div>
 
-            {/* ── Category Cards ── */}
-            {categories.length > 0 && (
-                <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-6">
-                    <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">{t('categories.title')}</h2>
-                    <div className="flex gap-3 overflow-x-auto pb-1">
-                        {categories.map((cat) => (
-                            <div
-                                key={cat.id}
-                                className="relative flex-shrink-0 group"
-                            >
-                                {/* Admin action buttons overlay */}
-                                {isAdmin && (
-                                    <>
-                                        {/* Delete */}
-                                        <button
-                                            onClick={async (e) => {
-                                                e.stopPropagation();
-                                                if (!window.confirm(t('categories.delete_confirm', { name: cat.name }))) return;
-                                                try {
-                                                    await api.delete(`/categories/${cat.id}`);
-                                                    fetchCategories();
-                                                    fetchProducts();
-                                                } catch (err) {
-                                                    alert(err.response?.data?.error || t('categories.errors.delete_failed'));
-                                                }
-                                            }}
-                                            className="absolute -top-2 -right-2 z-10 w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-400 hover:bg-red-50 hover:text-red-500 hover:border-red-200 shadow-sm transition-all opacity-0 group-hover:opacity-100"
-                                            title="Delete category"
-                                        >
-                                            <Trash2 className="w-3 h-3" />
-                                        </button>
-                                        {/* Rename */}
-                                        <button
-                                            onClick={(e) => startRename(cat, e)}
-                                            className="absolute -top-2 -left-2 z-10 w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-400 hover:bg-blue-50 hover:text-blue-500 hover:border-blue-200 shadow-sm transition-all opacity-0 group-hover:opacity-100"
-                                            title="Rename category"
-                                        >
-                                            <Pencil className="w-3 h-3" />
-                                        </button>
-                                    </>
-                                )}
-                                {/* Card body */}
-                                {renamingCatId === cat.id ? (
-                                    <div className="flex flex-col items-center gap-2 px-4 py-4 bg-blue-50 border-2 border-blue-300 rounded-2xl min-w-[140px]" onClick={e => e.stopPropagation()}>
-                                        <input
-                                            autoFocus
-                                            type="text"
-                                            value={renameValue}
-                                            onChange={e => setRenameValue(e.target.value)}
-                                            onKeyDown={e => { if (e.key === 'Enter') saveRename(cat.id, e); if (e.key === 'Escape') cancelRename(e); }}
-                                            className="w-full text-sm font-bold text-center bg-white border border-blue-200 rounded-xl px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-300"
-                                        />
-                                        <div className="flex gap-1.5">
-                                            <button onClick={e => saveRename(cat.id, e)} className="p-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700"><Check className="w-3 h-3" /></button>
-                                            <button onClick={cancelRename} className="p-1.5 bg-gray-200 text-gray-600 rounded-lg hover:bg-gray-300"><X className="w-3 h-3" /></button>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <button
-                                        onClick={() => setSelectedCategory(cat)}
-                                        className="flex flex-col items-center justify-center gap-2 px-5 py-4 bg-slate-50 hover:bg-blue-50 border-2 border-transparent hover:border-blue-200 rounded-2xl transition-all min-w-[110px] group/catbtn"
-                                    >
-                                        <div className="w-9 h-9 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center group-hover/catbtn:bg-blue-600 group-hover/catbtn:text-white transition-all">
-                                            <Tag className="w-4 h-4" />
-                                        </div>
-                                        <span className="text-xs font-bold text-gray-700 group-hover/catbtn:text-blue-700 text-center leading-tight">{cat.name}</span>
-                                        <span className="text-[10px] text-gray-400 font-medium">{countForCategory(cat.id)} {t('common.items')}</span>
-                                    </button>
-                                )}
+            {/* ── Plan Limit Warning (Free only) ── */}
+            {isFreePlan && (
+                <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-lg ${products.length >= 45 ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'}`}>
+                            <Package className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <p className="text-sm font-bold text-slate-900">
+                                {products.length}/50 Products Used
+                            </p>
+                            <div className="w-48 h-1.5 bg-slate-100 rounded-full mt-1 overflow-hidden">
+                                <div
+                                    className={`h-full transition-all ${products.length >= 45 ? 'bg-red-500' : 'bg-blue-600'}`}
+                                    style={{ width: `${Math.min(100, (products.length / 50) * 100)}%` }}
+                                />
                             </div>
-                        ))}
+                        </div>
                     </div>
+                    <button
+                        onClick={() => setIsPricingModalOpen(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-[11px] font-black uppercase tracking-wider hover:bg-blue-700 transition-all shadow-md shadow-blue-600/20"
+                    >
+                        Upgrade for Unlimited Products
+                    </button>
                 </div>
             )}
+
+
+
+            {/* ── Category Cards ── */}
+            {
+                categories.length > 0 && (
+                    <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-6">
+                        <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">{t('categories.title')}</h2>
+                        <div className="flex gap-3 overflow-x-auto pb-1">
+                            {categories.map((cat) => (
+                                <div
+                                    key={cat.id}
+                                    className="relative flex-shrink-0 group"
+                                >
+                                    {/* Admin action buttons overlay */}
+                                    {isAdmin && (
+                                        <>
+                                            {/* Delete */}
+                                            <button
+                                                onClick={async (e) => {
+                                                    e.stopPropagation();
+                                                    if (!window.confirm(t('categories.delete_confirm', { name: cat.name }))) return;
+                                                    try {
+                                                        await api.delete(`/categories/${cat.id}`);
+                                                        fetchCategories();
+                                                        fetchProducts();
+                                                    } catch (err) {
+                                                        alert(err.response?.data?.error || t('categories.errors.delete_failed'));
+                                                    }
+                                                }}
+                                                className="absolute -top-2 -right-2 z-10 w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-400 hover:bg-red-50 hover:text-red-500 hover:border-red-200 shadow-sm transition-all opacity-0 group-hover:opacity-100"
+                                                title="Delete category"
+                                            >
+                                                <Trash2 className="w-3 h-3" />
+                                            </button>
+                                            {/* Rename */}
+                                            <button
+                                                onClick={(e) => startRename(cat, e)}
+                                                className="absolute -top-2 -left-2 z-10 w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-400 hover:bg-blue-50 hover:text-blue-500 hover:border-blue-200 shadow-sm transition-all opacity-0 group-hover:opacity-100"
+                                                title="Rename category"
+                                            >
+                                                <Pencil className="w-3 h-3" />
+                                            </button>
+                                        </>
+                                    )}
+                                    {/* Card body */}
+                                    {renamingCatId === cat.id ? (
+                                        <div className="flex flex-col items-center gap-2 px-4 py-4 bg-blue-50 border-2 border-blue-300 rounded-2xl min-w-[140px]" onClick={e => e.stopPropagation()}>
+                                            <input
+                                                autoFocus
+                                                type="text"
+                                                value={renameValue}
+                                                onChange={e => setRenameValue(e.target.value)}
+                                                onKeyDown={e => { if (e.key === 'Enter') saveRename(cat.id, e); if (e.key === 'Escape') cancelRename(e); }}
+                                                className="w-full text-sm font-bold text-center bg-white border border-blue-200 rounded-xl px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                                            />
+                                            <div className="flex gap-1.5">
+                                                <button onClick={e => saveRename(cat.id, e)} className="p-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700"><Check className="w-3 h-3" /></button>
+                                                <button onClick={cancelRename} className="p-1.5 bg-gray-200 text-gray-600 rounded-lg hover:bg-gray-300"><X className="w-3 h-3" /></button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <button
+                                            onClick={() => setSelectedCategory(cat)}
+                                            className="flex flex-col items-center justify-center gap-2 px-5 py-4 bg-slate-50 hover:bg-blue-50 border-2 border-transparent hover:border-blue-200 rounded-2xl transition-all min-w-[110px] group/catbtn"
+                                        >
+                                            <div className="w-9 h-9 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center group-hover/catbtn:bg-blue-600 group-hover/catbtn:text-white transition-all">
+                                                <Tag className="w-4 h-4" />
+                                            </div>
+                                            <span className="text-xs font-bold text-gray-700 group-hover/catbtn:text-blue-700 text-center leading-tight">{cat.name}</span>
+                                            <span className="text-[10px] text-gray-400 font-medium">{countForCategory(cat.id)} {t('common.items')}</span>
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )
+            }
 
             {/* ── Search + Product Table (uncategorized) ── */}
             <div className="card overflow-hidden">
@@ -536,23 +571,27 @@ const Products = () => {
             </div>
 
             {/* ── Modals ── */}
-            {isCategoryModalOpen && (
-                <CategoryModal
-                    onClose={() => setIsCategoryModalOpen(false)}
-                    onCreated={fetchCategories}
-                />
-            )}
-            {isProductModalOpen && (
-                <ProductModal
-                    editingProduct={editingProduct}
-                    categoryId={null}
-                    onClose={() => setIsProductModalOpen(false)}
-                    onSuccess={fetchProducts}
-                    currency={currency}
-                    isAdmin={isAdmin}
-                />
-            )}
-        </div>
+            {
+                isCategoryModalOpen && (
+                    <CategoryModal
+                        onClose={() => setIsCategoryModalOpen(false)}
+                        onCreated={fetchCategories}
+                    />
+                )
+            }
+            {
+                isProductModalOpen && (
+                    <ProductModal
+                        editingProduct={editingProduct}
+                        categoryId={null}
+                        onClose={() => setIsProductModalOpen(false)}
+                        onSuccess={fetchProducts}
+                        currency={currency}
+                        isAdmin={isAdmin}
+                    />
+                )
+            }
+        </div >
     );
 };
 

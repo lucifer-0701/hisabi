@@ -67,7 +67,7 @@ const Login = () => {
                         <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-8 border border-white/20 shadow-xl">
                             <Store className="w-8 h-8 text-white" />
                         </div>
-                        <h1 className="text-5xl font-black tracking-tight mb-4">Hisabi</h1>
+                        <h1 className="text-5xl font-black tracking-tight mb-4">Hisabi-POS</h1>
                         <p className="text-blue-100 text-xl font-medium leading-relaxed max-w-sm">
                             {t('login.brand_msg')}
                         </p>
@@ -302,7 +302,7 @@ const Login = () => {
                     </form>
 
                     <p className="mt-8 text-center text-gray-400 font-bold text-sm">
-                        Smart retail management by <span className="text-gray-900">Hisabi Tech</span>
+                        Smart retail management by <span className="text-gray-900">Hisabi-POS Tech</span>
                     </p>
                 </div>
             </div>

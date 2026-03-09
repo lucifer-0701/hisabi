@@ -21,6 +21,8 @@ const stockAdjustmentRoutes = require('./routes/stockAdjustmentRoutes');
 const discountCodeRoutes = require('./routes/discountCodeRoutes');
 const salesTargetRoutes = require('./routes/salesTargetRoutes');
 const duePaymentRoutes = require('./routes/duePaymentRoutes');
+const subscriptionRoutes = require('./routes/subscriptionRoutes');
+const exportRoutes = require('./routes/exportRoutes');
 
 const app = express();
 
@@ -65,6 +67,8 @@ app.use('/api/stock-adjustments', stockAdjustmentRoutes);
 app.use('/api/discount-codes', discountCodeRoutes);
 app.use('/api/targets', salesTargetRoutes);
 app.use('/api/due-payments', duePaymentRoutes);
+app.use('/api/subscription', subscriptionRoutes);
+app.use('/api/export', exportRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));

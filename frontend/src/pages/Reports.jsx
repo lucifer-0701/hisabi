@@ -14,8 +14,14 @@ import {
     Calendar,
     ArrowUpRight,
     ArrowDownRight,
-    Wallet
+    ArrowDownRight,
+    Wallet,
+    PieChart,
+    Clock,
+    UserCheck,
+    Lock
 } from 'lucide-react';
+import PricingModal from '../components/PricingModal';
 import {
     LineChart,
     Line,
@@ -58,6 +64,10 @@ const Reports = () => {
     });
 
     const [loading, setLoading] = useState(true);
+    const [advancedData, setAdvancedData] = useState(null);
+    const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
+
+    const isGoldOrAbove = ['gold', 'premium'].includes(user?.shop?.plan);
 
     useEffect(() => {
         fetchData();
@@ -68,14 +78,16 @@ const Reports = () => {
         try {
             const { startDate, endDate } = dateRange;
 
-            const [profitRes, trendRes, salesRes, dueStatsRes] = await Promise.all([
+            const [profitRes, trendRes, salesRes, dueStatsRes, advancedRes] = await Promise.all([
                 api.get(`/reports/profit?startDate=${startDate}&endDate=${endDate}`),
                 api.get(`/reports/trend?startDate=${startDate}&endDate=${endDate}`),
                 api.get(`/reports/daily?startDate=${startDate}&endDate=${endDate}`),
-                api.get('/due-payments/stats')
+                api.get('/due-payments/stats'),
+                isGoldOrAbove ? api.get(`/reports/advanced?startDate=${startDate}&endDate=${endDate}`) : Promise.resolve({ data: null })
             ]);
 
             const dueStats = dueStatsRes.data;
+            if (advancedRes.data) setAdvancedData(advancedRes.data);
 
             setStats({
                 totalSales: salesRes.data.totalSales,
@@ -111,19 +123,28 @@ const Reports = () => {
         setDateRange(prev => ({ ...prev, [name]: value }));
     };
 
-    const exportData = () => {
-        const headers = [t('common.date'), t('reports.total_sales'), t('reports.total_orders'), t('reports.total_revenue'), t('common.expense'), t('reports.net_profit')].join(',');
-        const rows = trendData.map(d => {
-            const profit = d.revenue - d.expense;
-            return `${d.date},${d.revenue},0,${d.revenue},${d.expense},${profit}`;
-        }).join('\n');
+    const exportData = async (format = 'csv') => {
+        if (!isGoldOrAbove) {
+            setIsPricingModalOpen(true);
+            return;
+        }
 
-        const blob = new Blob([headers + '\n' + rows], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `report-${dateRange.startDate}-to-${dateRange.endDate}.csv`;
-        a.click();
+        try {
+            const { startDate, endDate } = dateRange;
+            const response = await api.get(`/export/sales-${format}?startDate=${startDate}&endDate=${endDate}`, {
+                responseType: 'blob'
+            });
+
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `sales_report_${startDate}_to_${endDate}.${format}`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch (error) {
+            console.error(`Export ${format} failed`, error);
+        }
     };
 
     const formatCurrency = (val) => {
@@ -161,12 +182,28 @@ const Reports = () => {
                             className="text-sm bg-transparent border-none focus:ring-0 p-0 w-32"
                         />
                     </div>
-                    <button
-                        onClick={exportData}
-                        className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg text-sm font-medium hover:bg-slate-800 transition-colors shadow-sm"
-                    >
-                        <Download className="w-4 h-4" /> {t('common.export')}
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => exportData('csv')}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-sm ${isGoldOrAbove
+                                    ? 'bg-slate-900 text-white hover:bg-slate-800'
+                                    : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed hover:bg-slate-200'
+                                }`}
+                        >
+                            <Download className="w-4 h-4" /> CSV
+                            {!isGoldOrAbove && <Lock className="w-3 h-3 ml-1" />}
+                        </button>
+                        <button
+                            onClick={() => exportData('pdf')}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-sm ${isGoldOrAbove
+                                    ? 'bg-white border border-slate-200 text-slate-900 hover:bg-slate-50'
+                                    : 'bg-slate-50 text-slate-300 border border-slate-200 cursor-not-allowed'
+                                }`}
+                        >
+                            <Download className="w-4 h-4" /> PDF
+                            {!isGoldOrAbove && <Lock className="w-3 h-3 ml-1" />}
+                        </button>
+                    </div>
                 </div>
             </header>
 
@@ -399,8 +436,117 @@ const Reports = () => {
                             </div>
                         </div>
                     </div>
+
+                    {/* Advanced Analytics - Gold+ only */}
+                    <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm relative overflow-hidden">
+                        {!isGoldOrAbove && (
+                            <div className="absolute inset-0 bg-slate-50/60 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center p-6 text-center">
+                                <div className="w-16 h-16 bg-white rounded-2xl shadow-xl flex items-center justify-center mb-4">
+                                    <Sparkles className="w-8 h-8 text-blue-600" />
+                                </div>
+                                <h4 className="text-xl font-black text-slate-900">Unlock Advanced Insights</h4>
+                                <p className="text-slate-500 text-sm mt-2 max-w-sm">
+                                    Get category breakthroughs, peak hour analysis, and top customer trends with Hisabi-POS Gold.
+                                </p>
+                                <button
+                                    onClick={() => setIsPricingModalOpen(true)}
+                                    className="mt-6 px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-blue-600/25 hover:bg-blue-700 transition-all"
+                                >
+                                    Upgrade Now
+                                </button>
+                            </div>
+                        )}
+
+                        <div className={`flex items-center gap-3 mb-8 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                            <div className="w-10 h-10 bg-teal-50 rounded-xl flex items-center justify-center text-teal-600">
+                                <PieChart className="w-5 h-5" />
+                            </div>
+                            <h3 className="text-lg font-black text-slate-900 tracking-tight">Advanced Analytics</h3>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                            {/* Category Mix */}
+                            <div className="space-y-6">
+                                <div className={`flex justify-between items-center ${isRTL ? 'flex-row-reverse' : ''}`}>
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 flex items-center gap-2">
+                                        <PieChart className="w-3 h-3" /> Sales by Category
+                                    </p>
+                                </div>
+                                <div className="space-y-4">
+                                    {(advancedData?.salesByCategory || []).length > 0 ? (
+                                        advancedData.salesByCategory.map((cat, i) => (
+                                            <div key={i} className="space-y-1.5">
+                                                <div className="flex justify-between text-xs font-bold">
+                                                    <span className="text-slate-600">{cat.name}</span>
+                                                    <span className="text-slate-900">{currency} {formatCurrency(cat.revenue)}</span>
+                                                </div>
+                                                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                                                    <div
+                                                        className="h-full bg-teal-500 rounded-full"
+                                                        style={{ width: `${Math.min(100, (cat.revenue / stats.totalRevenue) * 100)}%` }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <p className="text-sm text-slate-400 italic">No category data available</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Peak Hours & Customers */}
+                            <div className="space-y-8">
+                                <div className="space-y-4">
+                                    <p className={`text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 flex items-center gap-2 ${isRTL ? 'text-right' : ''}`}>
+                                        <Clock className="w-3 h-3" /> Peak Operation Hours
+                                    </p>
+                                    <div className="flex items-end gap-1.5 h-20 px-1">
+                                        {Array.from({ length: 12 }, (_, i) => {
+                                            const hourData = advancedData?.salesByHour?.find(h => h.hour === (i + 9)) || { count: 0 };
+                                            return (
+                                                <div key={i} className="flex-1 group relative">
+                                                    <div
+                                                        className="w-full bg-blue-100 group-hover:bg-blue-300 rounded-t-sm transition-all"
+                                                        style={{ height: `${Math.max(10, Math.min(100, (hourData.count / 10) * 100))}%` }}
+                                                    />
+                                                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[8px] px-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                                        {hourData.count} sales
+                                                    </div>
+                                                    <span className="block text-[8px] text-slate-400 mt-1 text-center font-bold">{(i + 9)}</span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <p className={`text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 flex items-center gap-2 ${isRTL ? 'text-right' : ''}`}>
+                                        <UserCheck className="w-3 h-3" /> Most Frequent Customers
+                                    </p>
+                                    <div className="space-y-2">
+                                        {(advancedData?.topCustomers || []).slice(0, 3).map((cust, i) => (
+                                            <div key={i} className="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-100">
+                                                <div className="flex items-center gap-2.5">
+                                                    <div className="w-7 h-7 bg-white rounded-lg flex items-center justify-center text-[10px] font-black border border-slate-200">
+                                                        {cust.name.substring(0, 2).toUpperCase()}
+                                                    </div>
+                                                    <div className="text-xs font-bold text-slate-900">{cust.name}</div>
+                                                </div>
+                                                <div className="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">{cust.visits} visits</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
+
+            <PricingModal
+                isOpen={isPricingModalOpen}
+                onClose={() => setIsPricingModalOpen(false)}
+            />
         </div>
     );
 };

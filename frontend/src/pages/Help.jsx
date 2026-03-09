@@ -131,7 +131,7 @@ const Help = () => {
                 </div>
                 <h1 className="text-2xl font-black text-slate-900">Help & FAQ</h1>
                 <p className="text-sm text-slate-500 max-w-md mx-auto">
-                    Everything you need to know about using Hisabi. Can't find an answer? Contact support below.
+                    Everything you need to know about using Hisabi-POS. Can't find an answer? Contact support below.
                 </p>
             </div>
 

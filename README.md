@@ -2,7 +2,7 @@
 
 **Hisabi** is a full-stack SaaS POS and inventory management system built for small retail shops in the UAE and Kuwait.
 
-🌐 **Live:** *Coming soon — deploying to Vercel*
+🌐 **Live:** *Coming soon — deploying to Netlify*
 
 ---
 

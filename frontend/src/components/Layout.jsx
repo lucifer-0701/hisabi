@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import api, { IMAGE_BASE_URL } from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import {
@@ -85,11 +85,21 @@ const Sidebar = ({ location, onClose }) => {
         <aside className="flex flex-col h-full">
             {/* Logo */}
             <div className={`flex items-center gap-3 px-5 h-16 border-b border-slate-100 flex-shrink-0 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-md shadow-blue-600/30 flex-shrink-0">
-                    <Store className="w-4 h-4 text-white" />
+                <div
+                    className="w-8 h-8 rounded-lg flex items-center justify-center shadow-md flex-shrink-0 overflow-hidden"
+                    style={{
+                        backgroundColor: user?.shop?.brand_color || '#3b82f6',
+                        boxShadow: `0 4px 12px ${user?.shop?.brand_color ? user.shop.brand_color + '40' : 'rgba(59, 130, 246, 0.3)'}`
+                    }}
+                >
+                    {user?.shop?.brand_logo ? (
+                        <img src={`${IMAGE_BASE_URL}${user.shop.brand_logo}`} alt="Logo" className="w-full h-full object-contain p-1" />
+                    ) : (
+                        <Store className="w-4 h-4 text-white" />
+                    )}
                 </div>
                 <div className={`overflow-hidden ${isRTL ? 'text-right' : 'text-left'}`}>
-                    <h1 className="text-base font-black text-slate-900 tracking-tight leading-none">Hisabi</h1>
+                    <h1 className="text-base font-black text-slate-900 tracking-tight leading-none">{user?.shop?.name || 'Hisabi-POS'}</h1>
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{t('common.pos_subtitle')}</p>
                 </div>
                 {onClose && (
@@ -284,7 +294,7 @@ const Layout = () => {
                         <div className="w-6 h-6 bg-blue-600 rounded-md flex items-center justify-center">
                             <Store className="w-3.5 h-3.5 text-white" />
                         </div>
-                        <span className="font-black text-slate-900 text-sm tracking-tight">Hisabi</span>
+                        <span className="font-black text-slate-900 text-sm tracking-tight">Hisabi-POS</span>
                     </div>
                 </header>
 
@@ -322,7 +332,7 @@ const Layout = () => {
                     <footer className="flex-shrink-0 border-t border-slate-100 bg-white">
                         <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col sm:flex-row items-center justify-between gap-2`}>
                             <p className="text-[11px] font-semibold text-slate-400">
-                                © {new Date().getFullYear()} Hisabi. All rights reserved. Abdul Hussain.
+                                © {new Date().getFullYear()} Hisabi-POS. All rights reserved. Abdul Hussain.
                             </p>
                             <a
                                 href="mailto:support@hisabi.app"

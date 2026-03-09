@@ -1,7 +1,8 @@
 const Joi = require('joi');
 const { sequelize } = require('../../../database/database');
-const { Product, BundleItem } = require('../../../database/models');
+const { Product, BundleItem, Shop } = require('../../../database/models');
 const { Op } = require('sequelize');
+const { getPlanLimits } = require('../middleware/planMiddleware');
 
 const productSchema = Joi.object({
     name: Joi.string().required(),
@@ -100,6 +101,19 @@ const createProduct = async (req, res) => {
 
         // Ensure boolean conversion
         is_bundle = is_bundle === 'true' || is_bundle === true;
+
+        // Check plan limits
+        const shop = await Shop.findByPk(shop_id);
+        const limits = getPlanLimits(shop.plan);
+        const productCount = await Product.count({ where: { shop_id } });
+
+        if (productCount >= limits.maxProducts) {
+            await t.rollback();
+            return res.status(403).json({
+                error: 'Limit reached',
+                message: `You have reached the limit of ${limits.maxProducts} products for the ${shop.plan} plan. Please upgrade to add more.`
+            });
+        }
 
         // Check barcode uniqueness within shop if provided
         if (barcode) {

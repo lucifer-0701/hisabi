@@ -3,10 +3,12 @@ import api from '../api/axios';
 import {
     Printer, Download, Search, FileText, User,
     ChevronLeft, ChevronRight, CheckCircle2, Trash2,
-    Circle, AlertCircle, ChevronDown, ChevronUp, Tag
+    Circle, AlertCircle, ChevronDown, ChevronUp, Tag,
+    Clock, Crown
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
+import PricingModal from '../components/PricingModal';
 
 const StatusBadge = ({ status }) => {
     const { t } = useTranslation();
@@ -178,6 +180,10 @@ const Invoices = () => {
     const [totalPages, setTotalPages] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
     const [searchTerm, setSearchTerm] = useState('');
+    const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
+
+    const currentPlan = user?.shop?.plan || 'free';
+    const isPremium = currentPlan === 'premium';
     const currency = user?.shop?.currency || 'AED';
 
     const fetchInvoices = async () => {
@@ -252,6 +258,27 @@ const Invoices = () => {
                     />
                 </div>
             </div>
+
+            {/* ── History Retention Warning (Non-Premium) ── */}
+            {!isPremium && (
+                <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-100 rounded-[2rem] p-6 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-white rounded-2xl shadow-sm flex items-center justify-center flex-shrink-0">
+                            <Clock className="w-6 h-6 text-orange-500" />
+                        </div>
+                        <div>
+                            <h4 className="text-base font-black text-slate-900 leading-tight">6-Month History Retention</h4>
+                            <p className="text-sm text-slate-500 font-bold mt-0.5">Your current plan limits invoice history to the last 6 months. Upgrade to Premium for life-time storage.</p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => setIsPricingModalOpen(true)}
+                        className="btn-primary whitespace-nowrap bg-slate-900 hover:bg-slate-800"
+                    >
+                        <Crown className="w-4 h-4" /> Upgrade to Premium
+                    </button>
+                </div>
+            )}
 
             {/* Main Table Card */}
             <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
@@ -349,6 +376,10 @@ const Invoices = () => {
                     </div>
                 )}
             </div>
+            <PricingModal
+                isOpen={isPricingModalOpen}
+                onClose={() => setIsPricingModalOpen(false)}
+            />
         </div>
     );
 };

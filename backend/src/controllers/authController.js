@@ -33,7 +33,9 @@ const updateProfileSchema = Joi.object({
     address: Joi.string().allow('', null),
     phone: Joi.string().allow('', null),
     email: Joi.string().email().allow('', null),
-    trn: Joi.string().allow('', null)
+    trn: Joi.string().allow('', null),
+    brand_logo: Joi.string().allow('', null),
+    brand_color: Joi.string().allow('', null)
 });
 
 const register = async (req, res) => {
@@ -91,7 +93,17 @@ const register = async (req, res) => {
                 role: user.role,
                 shop_id: shop.id
             },
-            shop
+            shop: {
+                id: shop.id,
+                name: shop.name,
+                currency: shop.currency,
+                vat_enabled: shop.vat_enabled,
+                phone: shop.phone,
+                email: shop.email,
+                plan: shop.plan,
+                brand_logo: shop.brand_logo,
+                brand_color: shop.brand_color
+            }
         });
     } catch (error) {
         await t.rollback();
@@ -143,7 +155,10 @@ const login = async (req, res) => {
                 currency: shop.currency,
                 vat_enabled: shop.vat_enabled,
                 phone: shop.phone,
-                email: shop.email
+                email: shop.email,
+                plan: shop.plan,
+                brand_logo: shop.brand_logo,
+                brand_color: shop.brand_color
             }
         });
 
@@ -207,7 +222,7 @@ const getProfile = async (req, res) => {
 
 const updateProfile = async (req, res) => {
     try {
-        const { username, password, shop_name, address, phone, email, trn } = req.body;
+        const { username, password, shop_name, address, phone, email, trn, brand_logo, brand_color } = req.body;
         const user_id = req.user.id;
         const shop_id = req.user.shop_id;
 
@@ -231,6 +246,15 @@ const updateProfile = async (req, res) => {
         if (phone !== undefined) shop.phone = phone;
         if (email !== undefined) shop.email = email;
         if (trn !== undefined) shop.trn = trn;
+
+        // Handle file upload for logo
+        if (req.file) {
+            shop.brand_logo = `/uploads/${req.file.filename}`;
+        } else if (brand_logo !== undefined) {
+            shop.brand_logo = brand_logo;
+        }
+
+        if (brand_color !== undefined) shop.brand_color = brand_color;
         await shop.save();
 
         res.json({
@@ -248,7 +272,10 @@ const updateProfile = async (req, res) => {
                 email: shop.email,
                 trn: shop.trn,
                 currency: shop.currency,
-                vat_enabled: shop.vat_enabled
+                vat_enabled: shop.vat_enabled,
+                plan: shop.plan,
+                brand_logo: shop.brand_logo,
+                brand_color: shop.brand_color
             }
         });
     } catch (error) {

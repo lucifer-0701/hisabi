@@ -270,10 +270,101 @@ const getTrendData = async (req, res) => {
     }
 };
 
+const getAdvancedAnalytics = async (req, res) => {
+    try {
+        const shop_id = req.user.shop_id;
+        const { startDate, endDate } = req.query;
+
+        let dateFilter = {};
+        if (startDate && endDate) {
+            dateFilter = { [Op.between]: [new Date(startDate), new Date(endDate)] };
+        } else {
+            const end = new Date();
+            const start = new Date();
+            start.setDate(start.getDate() - 30);
+            dateFilter = { [Op.between]: [start, end] };
+        }
+
+        // 1. Sales by Category
+        const salesByCategory = await InvoiceItem.findAll({
+            include: [
+                {
+                    model: Invoice,
+                    as: 'Invoice',
+                    where: { shop_id, status: { [Op.in]: ['paid', 'partial'] }, date: dateFilter },
+                    attributes: []
+                },
+                {
+                    model: Product,
+                    as: 'Product',
+                    include: [{ model: Category, as: 'Category' }]
+                }
+            ],
+            attributes: [
+                [sequelize.col('Product->Category.name'), 'category_name'],
+                [sequelize.fn('SUM', sequelize.col('line_total')), 'revenue'],
+                [sequelize.fn('SUM', sequelize.col('quantity')), 'quantity']
+            ],
+            group: [sequelize.col('Product->Category.name')],
+            raw: true
+        });
+
+        // 2. Peer hours / Sales by Hour
+        const salesByHour = await Invoice.findAll({
+            where: { shop_id, status: { [Op.in]: ['paid', 'partial'] }, date: dateFilter },
+            attributes: [
+                [sequelize.fn('EXTRACT', sequelize.literal('HOUR FROM "date"')), 'hour'],
+                [sequelize.fn('COUNT', sequelize.col('id')), 'count'],
+                [sequelize.fn('SUM', sequelize.col('grand_total')), 'revenue']
+            ],
+            group: [sequelize.fn('EXTRACT', sequelize.literal('HOUR FROM "date"'))],
+            order: [[sequelize.literal('hour'), 'ASC']],
+            raw: true
+        });
+
+        // 3. Top Customers (Loyalty)
+        const topCustomers = await Invoice.findAll({
+            where: { shop_id, status: { [Op.in]: ['paid', 'partial'] }, date: dateFilter, customer_name: { [Op.ne]: null } },
+            attributes: [
+                'customer_name',
+                [sequelize.fn('COUNT', sequelize.col('id')), 'visit_count'],
+                [sequelize.fn('SUM', sequelize.col('grand_total')), 'total_spent']
+            ],
+            group: ['customer_name'],
+            order: [[sequelize.literal('total_spent'), 'DESC']],
+            limit: 10,
+            raw: true
+        });
+
+        res.json({
+            salesByCategory: salesByCategory.map(c => ({
+                name: c.category_name || 'Uncategorized',
+                revenue: parseFloat(c.revenue || 0),
+                quantity: parseFloat(c.quantity || 0)
+            })),
+            salesByHour: salesByHour.map(h => ({
+                hour: parseInt(h.hour),
+                count: parseInt(h.count),
+                revenue: parseFloat(h.revenue || 0)
+            })),
+            topCustomers: topCustomers.map(cust => ({
+                name: cust.customer_name,
+                visits: parseInt(cust.visit_count),
+                spent: parseFloat(cust.total_spent || 0)
+            }))
+        });
+
+    } catch (error) {
+        console.error('Advanced Analytics Error:', error);
+        res.status(500).json({ error: 'Failed to fetch advanced analytics' });
+    }
+};
+
 module.exports = {
     getDashboardStats,
     getFullDashboardStats,
     getDailySales,
     getProfitAnalysis,
-    getTrendData
+    getTrendData,
+    getAdvancedAnalytics
 };

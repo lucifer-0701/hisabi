@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api from '../api/axios';
+import api, { IMAGE_BASE_URL } from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import {
     User,
@@ -12,7 +12,12 @@ import {
     Lock,
     CheckCircle2,
     AlertCircle,
-    Loader2
+    Loader2,
+    Sparkles,
+    Upload,
+    Palette,
+    Crown,
+    Check
 } from 'lucide-react';
 
 const Profile = () => {
@@ -27,8 +32,14 @@ const Profile = () => {
         address: '',
         phone: '',
         email: '',
-        trn: ''
+        trn: '',
+        brand_color: '#3b82f6',
+        brand_logo: ''
     });
+    const [logoFile, setLogoFile] = useState(null);
+    const [logoPreview, setLogoPreview] = useState(null);
+
+    const isPremium = user?.shop?.plan === 'premium';
 
     const fetchProfile = async () => {
         try {
@@ -41,8 +52,11 @@ const Profile = () => {
                 address: shop.address || '',
                 phone: shop.phone || '',
                 email: shop.email || '',
-                trn: shop.trn || ''
+                trn: shop.trn || '',
+                brand_color: shop.brand_color || '#3b82f6',
+                brand_logo: shop.brand_logo || ''
             });
+            if (shop.brand_logo) setLogoPreview(`${IMAGE_BASE_URL}${shop.brand_logo}`);
         } catch (error) {
             console.error('Failed to fetch profile', error);
             setStatus({ type: 'error', message: 'Failed to load profile data' });
@@ -60,16 +74,33 @@ const Profile = () => {
         setProfileData(prev => ({ ...prev, [name]: value }));
     };
 
+    const handleLogoChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setLogoFile(file);
+            setLogoPreview(URL.createObjectURL(file));
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setSaving(true);
         setStatus({ type: null, message: '' });
 
         try {
-            const response = await api.put('/auth/profile', profileData);
+            const formData = new FormData();
+            Object.keys(profileData).forEach(key => {
+                if (profileData[key] !== undefined && key !== 'brand_logo') {
+                    formData.append(key, profileData[key]);
+                }
+            });
+            if (logoFile) formData.append('brand_logo', logoFile);
+
+            const response = await api.put('/auth/profile', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
             setStatus({ type: 'success', message: 'Profile updated successfully!' });
 
-            // Update local user context if shop details changed
             if (setUser) {
                 setUser({
                     ...user,
@@ -78,7 +109,6 @@ const Profile = () => {
                 });
             }
 
-            // Clear password field after update
             setProfileData(prev => ({ ...prev, password: '' }));
         } catch (error) {
             setStatus({
@@ -100,7 +130,6 @@ const Profile = () => {
 
     return (
         <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
-            {/* Page Header */}
             <div className="page-header">
                 <div className="page-title-group">
                     <div className="page-icon bg-slate-800">
@@ -114,8 +143,7 @@ const Profile = () => {
             </div>
 
             {status.message && (
-                <div className={`p-4 rounded-2xl flex items-center gap-3 animate-in slide-in-from-top-4 duration-300 ${status.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-red-50 text-red-700 border border-red-100'
-                    }`}>
+                <div className={`p-4 rounded-2xl flex items-center gap-3 animate-in slide-in-from-top-4 duration-300 ${status.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-red-50 text-red-700 border border-red-100'}`}>
                     {status.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
                     <span className="font-bold text-sm">{status.message}</span>
                 </div>
@@ -127,14 +155,12 @@ const Profile = () => {
                     <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:scale-110 transition-transform duration-700">
                         <Lock className="w-32 h-32" />
                     </div>
-
                     <div className="flex items-center gap-3 mb-8">
                         <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
                             <Lock className="w-5 h-5" />
                         </div>
                         <h2 className="text-xl font-black text-slate-900 tracking-tight">Login Credentials</h2>
                     </div>
-
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
                         <div className="space-y-2">
                             <label className="text-sm font-black text-slate-700 ml-1">Username</label>
@@ -145,14 +171,12 @@ const Profile = () => {
                                     name="username"
                                     value={profileData.username}
                                     onChange={handleChange}
-                                    className="w-full pl-11 pr-4 py-3.5 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-blue-500/20 focus:bg-white outline-none font-bold text-slate-900 transition-all placeholder:text-slate-300"
-                                    placeholder="your_username"
+                                    className="w-full pl-11 pr-4 py-3.5 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-blue-500/20 focus:bg-white outline-none font-bold text-slate-900 transition-all"
                                 />
                             </div>
                         </div>
-
                         <div className="space-y-2">
-                            <label className="text-sm font-black text-slate-700 ml-1">New Password (Leave blank to keep current)</label>
+                            <label className="text-sm font-black text-slate-700 ml-1">New Password (Empty to keep current)</label>
                             <div className="relative">
                                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                                 <input
@@ -173,14 +197,12 @@ const Profile = () => {
                     <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:scale-110 transition-transform duration-700">
                         <Building2 className="w-32 h-32" />
                     </div>
-
                     <div className="flex items-center gap-3 mb-8">
                         <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl">
                             <Building2 className="w-5 h-5" />
                         </div>
                         <h2 className="text-xl font-black text-slate-900 tracking-tight">Shop Contact Details</h2>
                     </div>
-
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
                         <div className="space-y-2 md:col-span-2">
                             <label className="text-sm font-black text-slate-700 ml-1">Business Name</label>
@@ -191,12 +213,10 @@ const Profile = () => {
                                     name="shop_name"
                                     value={profileData.shop_name}
                                     onChange={handleChange}
-                                    className="w-full pl-11 pr-4 py-3.5 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-blue-500/20 focus:bg-white outline-none font-bold text-slate-900 transition-all placeholder:text-slate-300"
-                                    placeholder="Official Business Name"
+                                    className="w-full pl-11 pr-4 py-3.5 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-blue-500/20 focus:bg-white outline-none font-bold text-slate-900 transition-all"
                                 />
                             </div>
                         </div>
-
                         <div className="space-y-2">
                             <label className="text-sm font-black text-slate-700 ml-1">Phone Number</label>
                             <div className="relative">
@@ -206,12 +226,10 @@ const Profile = () => {
                                     name="phone"
                                     value={profileData.phone}
                                     onChange={handleChange}
-                                    className="w-full pl-11 pr-4 py-3.5 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-blue-500/20 focus:bg-white outline-none font-bold text-slate-900 transition-all placeholder:text-slate-300"
-                                    placeholder="+971 00 000 0000"
+                                    className="w-full pl-11 pr-4 py-3.5 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-blue-500/20 focus:bg-white outline-none font-bold text-slate-900 transition-all"
                                 />
                             </div>
                         </div>
-
                         <div className="space-y-2">
                             <label className="text-sm font-black text-slate-700 ml-1">Email Address</label>
                             <div className="relative">
@@ -221,14 +239,12 @@ const Profile = () => {
                                     name="email"
                                     value={profileData.email}
                                     onChange={handleChange}
-                                    className="w-full pl-11 pr-4 py-3.5 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-blue-500/20 focus:bg-white outline-none font-bold text-slate-900 transition-all placeholder:text-slate-300"
-                                    placeholder="contact@business.com"
+                                    className="w-full pl-11 pr-4 py-3.5 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-blue-500/20 focus:bg-white outline-none font-bold text-slate-900 transition-all"
                                 />
                             </div>
                         </div>
-
                         <div className="space-y-2 md:col-span-2">
-                            <label className="text-sm font-black text-slate-700 ml-1">Physical Address (to appear on invoices)</label>
+                            <label className="text-sm font-black text-slate-700 ml-1">Physical Address</label>
                             <div className="relative">
                                 <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                                 <input
@@ -236,14 +252,12 @@ const Profile = () => {
                                     name="address"
                                     value={profileData.address}
                                     onChange={handleChange}
-                                    className="w-full pl-11 pr-4 py-3.5 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-blue-500/20 focus:bg-white outline-none font-bold text-slate-900 transition-all placeholder:text-slate-300"
-                                    placeholder="Full business address"
+                                    className="w-full pl-11 pr-4 py-3.5 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-blue-500/20 focus:bg-white outline-none font-bold text-slate-900 transition-all"
                                 />
                             </div>
                         </div>
-
                         <div className="space-y-2">
-                            <label className="text-sm font-black text-slate-700 ml-1">TRN (Tax Registration Number)</label>
+                            <label className="text-sm font-black text-slate-700 ml-1">TRN</label>
                             <div className="relative">
                                 <Hash className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                                 <input
@@ -251,32 +265,66 @@ const Profile = () => {
                                     name="trn"
                                     value={profileData.trn}
                                     onChange={handleChange}
-                                    className="w-full pl-11 pr-4 py-3.5 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-blue-500/20 focus:bg-white outline-none font-bold text-slate-900 transition-all placeholder:text-slate-300"
-                                    placeholder="Tax ID if applicable"
+                                    className="w-full pl-11 pr-4 py-3.5 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-blue-500/20 focus:bg-white outline-none font-bold text-slate-900 transition-all"
                                 />
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Save Button */}
+                {/* Premium Branding Section */}
+                <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 relative overflow-hidden group">
+                    {!isPremium && (
+                        <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] z-20 flex flex-col items-center justify-center p-6 text-center">
+                            <div className="w-16 h-16 bg-white rounded-2xl shadow-xl flex items-center justify-center mb-4"><Crown className="w-8 h-8 text-amber-500" /></div>
+                            <h4 className="text-xl font-black text-slate-900">Custom Branding</h4>
+                            <p className="text-slate-500 text-sm mt-1 max-w-sm">Upload your own logo and set your brand colors on the Premium plan.</p>
+                        </div>
+                    )}
+                    <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:scale-110 transition-transform duration-700">
+                        <Palette className="w-32 h-32" />
+                    </div>
+                    <div className="flex items-center gap-3 mb-8">
+                        <div className="p-2.5 bg-amber-50 text-amber-600 rounded-xl"><Sparkles className="w-5 h-5" /></div>
+                        <h2 className="text-xl font-black text-slate-900 tracking-tight">Premium Branding</h2>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
+                        <div className="space-y-4">
+                            <label className="text-sm font-black text-slate-700 ml-1">Shop Logo</label>
+                            <div className="flex items-center gap-6">
+                                <div className="w-24 h-24 rounded-3xl bg-slate-50 border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden relative group/logo cursor-pointer">
+                                    {logoPreview ? <img src={logoPreview} alt="Logo" className="w-full h-full object-contain p-2" /> : <Upload className="w-8 h-8 text-slate-300" />}
+                                    <input type="file" accept="image/*" onChange={handleLogoChange} disabled={!isPremium} className="absolute inset-0 opacity-0 cursor-pointer" />
+                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/logo:opacity-100 flex items-center justify-center transition-opacity"><Upload className="w-6 h-6 text-white" /></div>
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-xs font-bold text-slate-700">PNG, JPG or SVG</p>
+                                    <p className="text-[10px] text-slate-400 font-medium text-wrap">Square, transparent background recommended</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="space-y-4">
+                            <label className="text-sm font-black text-slate-700 ml-1">Brand Color</label>
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-2xl shadow-inner border border-white relative overflow-hidden" style={{ backgroundColor: profileData.brand_color }}>
+                                    <input type="color" name="brand_color" value={profileData.brand_color} onChange={handleChange} disabled={!isPremium} className="absolute inset-0 opacity-0 cursor-pointer w-[200%] h-[200%] -translate-x-1/4 -translate-y-1/4" />
+                                </div>
+                                <input type="text" name="brand_color" value={profileData.brand_color} onChange={handleChange} disabled={!isPremium} className="flex-1 px-4 py-2.5 bg-slate-50 rounded-xl border border-transparent font-mono text-xs font-bold text-slate-600 uppercase" />
+                            </div>
+                            <div className="flex gap-2">
+                                {['#3b82f6', '#0d9488', '#8b5cf6', '#f43f5e', '#f59e0b', '#0f172a'].map(color => (
+                                    <button key={color} type="button" onClick={() => handleChange({ target: { name: 'brand_color', value: color } })} disabled={!isPremium} className={`w-6 h-6 rounded-full border-2 transition-transform hover:scale-110 flex items-center justify-center ${profileData.brand_color === color ? 'border-slate-400' : 'border-transparent'}`} style={{ backgroundColor: color }}>
+                                        {profileData.brand_color === color && <Check className="w-3 h-3 text-white" />}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div className="flex justify-end pt-4">
-                    <button
-                        type="submit"
-                        disabled={saving}
-                        className="flex items-center gap-3 px-10 py-4 bg-blue-600 text-white rounded-[1.5rem] hover:bg-blue-700 disabled:bg-blue-300 transition-all shadow-xl shadow-blue-500/20 transform active:scale-95 font-black text-base"
-                    >
-                        {saving ? (
-                            <>
-                                <Loader2 className="w-5 h-5 animate-spin" />
-                                Saving Changes...
-                            </>
-                        ) : (
-                            <>
-                                <Save className="w-5 h-5" />
-                                Update Profile
-                            </>
-                        )}
+                    <button type="submit" disabled={saving} className="flex items-center gap-3 px-10 py-4 bg-blue-600 text-white rounded-[1.5rem] hover:bg-blue-700 disabled:bg-blue-300 transition-all font-black text-base shadow-xl shadow-blue-500/20 active:scale-95">
+                        {saving ? <><Loader2 className="w-5 h-5 animate-spin" /> Saving...</> : <><Save className="w-5 h-5" /> Update Profile</>}
                     </button>
                 </div>
             </form>

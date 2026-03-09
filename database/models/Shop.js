@@ -35,6 +35,20 @@ const Shop = sequelize.define('Shop', {
     email: {
         type: DataTypes.STRING(100),
         allowNull: true
+    },
+    plan: {
+        type: DataTypes.ENUM('free', 'gold', 'premium'),
+        allowNull: false,
+        defaultValue: 'free'
+    },
+    brand_logo: {
+        type: DataTypes.STRING(500),
+        allowNull: true
+    },
+    brand_color: {
+        type: DataTypes.STRING(7),
+        allowNull: true,
+        defaultValue: '#2563eb'
     }
 }, {
     tableName: 'shops',
