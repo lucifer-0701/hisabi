@@ -17,7 +17,6 @@ const registerSchema = Joi.object({
 });
 
 const loginSchema = Joi.object({
-    shop_name: Joi.string().required(),
     username: Joi.string().required(),
     password: Joi.string().required()
 });
@@ -41,6 +40,13 @@ const register = async (req, res) => {
     const t = await sequelize.transaction();
     try {
         const { shop_name, address, trn, currency, vat_enabled, phone, email, username, password } = req.body;
+
+        // Check if username exists globally
+        const existingUser = await User.findOne({ where: { username } });
+        if (existingUser) {
+            await t.rollback();
+            return res.status(400).json({ error: 'Username already exists' });
+        }
 
         // Check if shop name exists
         const existingShop = await Shop.findOne({ where: { name: shop_name } });
@@ -96,21 +102,22 @@ const register = async (req, res) => {
 
 const login = async (req, res) => {
     try {
-        const { shop_name, username, password } = req.body;
+        const { username, password } = req.body;
 
-        // Find Shop
-        const shop = await Shop.findOne({ where: { name: shop_name } });
-        if (!shop) {
+        // Find User by username only
+        const user = await User.findOne({
+            where: { username }
+        });
+
+        if (!user) {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
-        // Find User in Shop
-        const user = await User.findOne({
-            where: {
-                shop_id: shop.id,
-                username
-            }
-        });
+        // Find Shop associated with User
+        const shop = await Shop.findByPk(user.shop_id);
+        if (!shop) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
 
         if (!user) {
             return res.status(401).json({ error: 'Invalid credentials' });
@@ -155,10 +162,10 @@ const createStaff = async (req, res) => {
         const { username, password } = req.body;
         const shop_id = req.user.shop_id;
 
-        // Check if username exists in this shop
-        const existingUser = await User.findOne({ where: { shop_id, username } });
+        // Check if username exists globally
+        const existingUser = await User.findOne({ where: { username } });
         if (existingUser) {
-            return res.status(400).json({ error: 'Username already exists in this shop' });
+            return res.status(400).json({ error: 'Username already exists' });
         }
 
         const hashedPassword = await hashPassword(password);

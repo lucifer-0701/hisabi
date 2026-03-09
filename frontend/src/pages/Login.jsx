@@ -39,7 +39,7 @@ const Login = () => {
         setIsLoading(true);
         try {
             if (isLogin) {
-                await login(formData.shop_name, formData.username, formData.password);
+                await login(formData.username, formData.password);
             } else {
                 await register(formData);
             }
@@ -125,21 +125,23 @@ const Login = () => {
                     <form className="space-y-5" onSubmit={handleSubmit}>
                         {/* Common Fields */}
                         <div className="space-y-4">
-                            <div className="relative group">
-                                <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1 mb-1.5 block">{t('login.shop_identity')}</label>
-                                <div className="relative">
-                                    <Store className={`absolute ${isRTL ? 'right-4' : 'left-4'} top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-blue-500 transition-colors`} />
-                                    <input
-                                        name="shop_name"
-                                        type="text"
-                                        required
-                                        value={formData.shop_name}
-                                        onChange={handleChange}
-                                        className={`w-full ${isRTL ? 'pr-12 pl-4 text-right' : 'pl-12 pr-4'} py-3.5 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-medium text-gray-900 placeholder:text-gray-400`}
-                                        placeholder={t('login.shop_name')}
-                                    />
+                            {!isLogin && (
+                                <div className="relative group">
+                                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1 mb-1.5 block">{t('login.shop_identity')}</label>
+                                    <div className="relative">
+                                        <Store className={`absolute ${isRTL ? 'right-4' : 'left-4'} top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-blue-500 transition-colors`} />
+                                        <input
+                                            name="shop_name"
+                                            type="text"
+                                            required
+                                            value={formData.shop_name}
+                                            onChange={handleChange}
+                                            className={`w-full ${isRTL ? 'pr-12 pl-4 text-right' : 'pl-12 pr-4'} py-3.5 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-medium text-gray-900 placeholder:text-gray-400`}
+                                            placeholder={t('login.shop_name')}
+                                        />
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="relative group">
