@@ -1,5 +1,5 @@
 const { sequelize } = require('../../../database/database');
-const { Shop, Product, Invoice, InvoiceItem, Expense } = require('../../../database/models');
+const { Shop, Product, Invoice, InvoiceItem, Expense, Category } = require('../../../database/models');
 const { Op } = require('sequelize');
 
 const getDashboardStats = async (req, res) => {
@@ -78,8 +78,8 @@ const getFullDashboardStats = async (req, res) => {
             topProducts
         });
     } catch (error) {
-        console.error('Full Stats Error:', error);
-        res.status(500).json({ error: 'Failed to fetch dashboard stats' });
+        console.error('Full Stats Error [shop_id:' + req.user?.shop_id + ']:', error);
+        res.status(500).json({ error: 'Failed to fetch dashboard stats', details: error.message });
     }
 };
 

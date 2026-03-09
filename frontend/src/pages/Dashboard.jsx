@@ -46,20 +46,36 @@ const Dashboard = () => {
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [targetData, setTargetData] = useState(null);
+    const [dashError, setDashError] = useState(null);
     const currency = user?.shop?.currency || 'AED';
 
     useEffect(() => { fetchAll(); }, []);
 
     const fetchAll = async () => {
+        setLoading(true);
+        setDashError(null);
         try {
-            const [statsRes, targetRes] = await Promise.all([
+            const results = await Promise.allSettled([
                 api.get('/reports/fullstats'),
-                api.get('/targets').catch(() => ({ data: { currentMonth: null } }))
+                api.get('/targets')
             ]);
-            setStats(statsRes.data);
-            setTargetData(targetRes.data);
-        } catch { /* silent */ }
-        finally { setLoading(false); }
+
+            if (results[0].status === 'fulfilled') {
+                setStats(results[0].value.data);
+            } else {
+                console.error('Full Stats Fetch Error:', results[0].reason);
+                setDashError(results[0].reason?.response?.data?.error || 'Failed to load dashboard stats');
+            }
+
+            if (results[1].status === 'fulfilled') {
+                setTargetData(results[1].value.data);
+            }
+        } catch (err) {
+            console.error('Dashboard combined error:', err);
+            setDashError('An unexpected error occurred while loading the dashboard.');
+        } finally {
+            setLoading(false);
+        }
     };
 
 
@@ -163,6 +179,17 @@ const Dashboard = () => {
                     </div>
                 </div>
             </div>
+            {/* ── Error State ── */}
+            {dashError && (
+                <div className="p-4 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-3 animate-shake">
+                    <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+                    <div>
+                        <p className="text-sm font-bold text-red-800">Dashboard Error</p>
+                        <p className="text-xs text-red-600/80 font-medium">{dashError}</p>
+                        <button onClick={fetchAll} className="mt-2 text-xs font-black text-red-700 hover:underline">Try Again</button>
+                    </div>
+                </div>
+            )}
 
             {/* ── Sales Target ── */}
             {targetData?.currentMonth && (
