@@ -1,167 +1,108 @@
-# Hisabi — Inventory & Billing SaaS 123
+# Hisabi-POS — Smart Inventory & Billing SaaS
 
-**Hisabi** is a full-stack SaaS POS and inventory management system built for small retail shops in the UAE and Kuwait.
+**Hisabi-POS** is a high-performance, full-stack SaaS Point of Sale and inventory management system designed for modern retail environments. Originally built for the UAE and Kuwait, it now features a specialized expansion for the **Indian market**, including GST compliance and localized payment processing.
 
-🌐 **Live:** *Coming soon — deploying to Netlify*
+🌐 **Live:** *Coming soon — deploying to Vercel/Render*
 
 ---
 
-## Features
+## 🚀 Key Features
 
 | Module | Description |
 |---|---|
-| 🏪 **Shop & Auth** | Multi-shop registration, Admin/Staff roles, JWT authentication |
-| 📦 **Inventory** | Products with stock tracking, barcode support, category management |
-| 🧾 **Point of Sale** | Fast billing with barcode scanner, VAT (5% UAE / 0% Kuwait), discount codes |
-| 🗒️ **Invoices** | PDF invoice generation (tax-compliant), due payment tracking |
-| 📥 **Purchases** | Purchase orders, supplier management |
-| 🔄 **Returns** | Product return handling |
-| 📊 **Reports** | Daily sales, revenue charts, end-of-day summaries |
-| 🎯 **Sales Targets** | Set and track daily/monthly targets |
-| 💸 **Expenses** | Expense tracking per shop |
-| 🌍 **Multilingual** | English and Arabic (RTL) support via i18next |
+| 🏪 **Enterprise Auth** | Global unique usernames, Admin/Staff roles, Shop-based segmentation |
+| 📦 **Inventory Core** | Real-time stock tracking, Barcode/SKU support, Brand management |
+| 🧾 **Modern POS** | High-speed billing terminal with image support, Multi-tax configurations |
+| 🇮🇳 **India Expansion** | Specialized 18% GST calculation, HSN/SAC support, INR currency |
+| � **Digital Payments** | Integrated **Razorpay** checkout for Indian subscriptions |
+| � **Staff Management** | Admin-controlled team access, role-based permissions (Admin/Staff) |
+| �️ **Smart Invoices** | Professional PDF generation, tax-compliant headers, thermal printer friendly |
+| 🎯 **Sales Ops** | Daily/Monthly revenue targets, Expense tracking, Due payment collection |
+| � **Advanced Analytics** | Live dashboard KPIs, Top-selling product trends, Profit margin tracking |
+| 🌍 **Global Design** | English & Arabic (RTL) support with a premium, glassmorphism UI |
 
 ---
 
-## Tech Stack
+## 🛠️ Tech Stack
 
 **Backend**
-- Node.js + Express 5
-- PostgreSQL + Sequelize ORM
-- JWT Authentication
-- PDFKit (PDF generation)
-- Multer (file uploads)
+- **Node.js + Express 5** (Fast, modern serverless-ready API)
+- **PostgreSQL + Sequelize ORM** (Relational data integrity)
+- **Razorpay Node SDK** (Secure India payments)
+- **PDFKit** (Dynamic tax-compliant invoice generation)
+- **Joi** (Strict request validation)
 
 **Frontend**
-- React 18 + Vite
-- Tailwind CSS
-- Recharts (analytics)
-- i18next (English/Arabic)
-- ZXing (barcode scanner)
-- React Router v7
-
-**Deployment**
-- [Vercel](https://vercel.com) — frontend (React/Vite SPA) + backend (Serverless Node.js)
-- [Supabase](https://supabase.com) — managed PostgreSQL database
+- **React 18 + Vite** (Ultra-fast HMR and build times)
+- **Tailwind CSS** (Custom theme with glassmorphism aesthetics)
+- **Lucide-React** (Premium iconography)
+- **Recharts** (Visual data storytelling)
+- **i18next** (Dynamic multi-language support)
 
 ---
 
-## Project Structure
+## 📂 Project Structure
 
 ```
 hisabi/
 ├── backend/
 │   ├── src/
-│   │   ├── config/        # Database config (Sequelize + SSL)
-│   │   ├── controllers/   # Business logic per feature
-│   │   ├── middleware/     # Auth, upload, validation
-│   │   ├── models/        # Sequelize models
-│   │   ├── routes/        # Express API routes
-│   │   ├── services/      # PDF generation (PDFKit)
-│   │   └── utils/         # JWT, bcrypt helpers
-│   └── vercel.json        # Vercel serverless config
+│   │   ├── controllers/   # Auth, Business Logic, Payment, Reports
+│   │   ├── middleware/    # JWT Security, Role Auth, Validation
+│   │   ├── routes/        # API Endpoints (POS, Staff, Products, etc.)
+│   │   └── services/      # Razorpay & PDF generation logic
+│   └── database/          # Sequelize models & migrations
 ├── frontend/
 │   ├── src/
-│   │   ├── api/           # Axios instance
-│   │   ├── components/    # Layout, ProtectedRoute
-│   │   ├── context/       # AuthContext
-│   │   ├── pages/         # All page components
-│   │   └── public/locales # en / ar translation files
-│   └── vercel.json        # Vercel SPA routing config
-└── package.json           # Root build scripts
+│   │   ├── components/    # Reusable UI (Modals, Charts, Sidebar)
+│   │   ├── pages/         # Dashboard, POS, Staff, Inventory, etc.
+│   │   ├── context/       # Auth & Global State Management
+│   │   └── public/locales # English and Arabic translation JSONs
+└── package.json           # Root automation scripts
 ```
 
 ---
 
-## Local Development
+## ⚙️ Local Development
 
 ### Prerequisites
 - Node.js v20+
-- PostgreSQL (local instance or Supabase connection string)
+- PostgreSQL (Local or Managed like Neon/Supabase)
 
 ### Setup
 
-```bash
-# 1. Install root dependencies
-npm install
+1. **Clone & Install:**
+   ```bash
+   npm install
+   ```
 
-# 2. Set up backend
-cd backend
-npm install
-cp .env.example .env   # Fill in DATABASE_URL, JWT_SECRET, FRONTEND_URL
-cd ..
+2. **Environment Configuration:**
+   - **Backend:** Create `backend/.env` (use `.env.example` as a template).
+   - **Frontend:** Create `frontend/.env.local` with `VITE_API_URL`.
 
-# 3. Set up frontend
-cd frontend
-npm install
-cp .env.example .env.local   # Fill in VITE_API_URL=http://localhost:5000
-cd ..
-
-# 4. Run both dev servers concurrently
-npm start
-```
-
-Frontend runs at `http://localhost:5173` and backend at `http://localhost:5000`.
+3. **Start Development:**
+   ```bash
+   npm start
+   ```
+   *Frontend: `http://localhost:5173` | Backend: `http://localhost:5000`*
 
 ---
 
-## Deployment (Vercel + Supabase)
-
-### 1. Set up Supabase Database
-
-1. Create a project at [supabase.com](https://supabase.com)
-2. Go to **Project Settings → Database → Connection String → URI**
-3. Copy the `DATABASE_URL` — you'll need it for the backend
-
-### 2. Deploy Backend to Vercel
-
-1. Go to [vercel.com](https://vercel.com) → **Add New → Project**
-2. Import the `lucifer-0701/hisabi` GitHub repo
-3. Set **Root Directory** to `backend`
-4. Add these **Environment Variables**:
-
-| Variable | Value |
-|---|---|
-| `DATABASE_URL` | Your Supabase connection string |
-| `JWT_SECRET` | A long random secret string |
-| `NODE_ENV` | `production` |
-| `FRONTEND_URL` | Your frontend Vercel URL (e.g. `https://hisabi.vercel.app`) |
-
-5. Deploy — note the backend URL (e.g. `https://hisabi-backend.vercel.app`)
-
-### 3. Deploy Frontend to Vercel
-
-1. Go to [vercel.com](https://vercel.com) → **Add New → Project**
-2. Import the same repo, set **Root Directory** to `frontend`
-3. Add this **Environment Variable**:
-
-| Variable | Value |
-|---|---|
-| `VITE_API_URL` | Your backend Vercel URL (from step 2) |
-
-4. Deploy — the app will be live at your Vercel frontend URL
-
-> ✅ No cold-start sleep on Vercel. Supabase free tier includes 500 MB PostgreSQL.
-
----
-
-## Environment Variables
+## 🗺️ Environment Variables
 
 ### Backend (`backend/.env`)
-
 | Variable | Description |
 |---|---|
-| `DATABASE_URL` | Supabase PostgreSQL connection string |
-| `JWT_SECRET` | Secret key for JWT signing |
-| `NODE_ENV` | Set to `production` on Vercel |
-| `FRONTEND_URL` | Frontend URL for CORS (e.g. `https://hisabi.vercel.app`) |
+| `DATABASE_URL` | PostgreSQL connection string |
+| `JWT_SECRET` | Secret for token signing |
+| `RAZORPAY_KEY_ID` | Your Razorpay API Key (for India payments) |
+| `RAZORPAY_SECRET` | Your Razorpay API Secret |
 
 ### Frontend (`frontend/.env.local`)
-
 | Variable | Description |
 |---|---|
-| `VITE_API_URL` | Backend API base URL (e.g. `https://hisabi-backend.vercel.app`) |
+| `VITE_API_URL` | Base URL of your backend API |
 
 ---
 
-*Built with ❤️ for Hisabi*
+*Built with ❤️ for the future of retail by Hisabi-POS Team*
