@@ -1,3 +1,7 @@
+import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Users, UserPlus, Trash2, Shield, Search, X, Lock, Loader2 } from 'lucide-react';
+import api from '../api/axios';
 import { usePlan } from '../hooks/usePlan';
 
 const Staff = () => {

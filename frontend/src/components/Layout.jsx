@@ -264,7 +264,7 @@ const UserDropdown = ({ user, handleLogout, isRTL, t }) => {
 
 const Layout = () => {
     const { user, logout } = useAuth();
-    const { isLocked } = usePlan();
+    const { isLocked, plan } = usePlan();
     const { t, i18n } = useTranslation();
     const isRTL = i18n.language === 'ar';
     const location = useLocation();
@@ -349,6 +349,10 @@ const Layout = () => {
                             <Crown className="w-3.5 h-3.5" />
                             Upgrade
                         </button>
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-xl">
+                            <Crown className={`w-3.5 h-3.5 ${plan === 'premium' ? 'text-amber-500' : plan === 'gold' ? 'text-blue-500' : 'text-slate-400'}`} />
+                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-600">{plan}</span>
+                        </div>
                         <UserDropdown user={user} handleLogout={handleLogout} isRTL={isRTL} t={t} />
                     </div>
                 </header>

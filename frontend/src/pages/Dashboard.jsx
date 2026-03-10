@@ -42,6 +42,7 @@ const RankBadge = ({ rank }) => {
 
 const Dashboard = () => {
     const { user } = useAuth();
+    const { isLocked } = usePlan();
     const { t } = useTranslation();
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -55,19 +56,44 @@ const Dashboard = () => {
         setLoading(true);
         setDashError(null);
         try {
-            const results = await Promise.allSettled([
-                api.get('/reports/fullstats'),
-                api.get('/targets')
-            ]);
+            const isFullStatsLocked = isLocked('/reports');
+            const isTargetsLocked = isLocked('/targets');
+
+            const calls = [];
+            if (!isFullStatsLocked) {
+                calls.push(api.get('/reports/fullstats'));
+            } else {
+                calls.push(Promise.resolve({
+                    data: {
+                        todayRevenue: 0,
+                        totalInvoices: 0,
+                        lowStockCount: 0,
+                        todayExpenses: 0,
+                        totalProducts: 0,
+                        topProducts: []
+                    }, isLocked: true
+                }));
+            }
+
+            if (!isTargetsLocked) {
+                calls.push(api.get('/targets'));
+            } else {
+                calls.push(Promise.resolve({ data: null, isLocked: true }));
+            }
+
+            const results = await Promise.allSettled(calls);
 
             if (results[0].status === 'fulfilled') {
                 setStats(results[0].value.data);
             } else {
                 console.error('Full Stats Fetch Error:', results[0].reason);
-                setDashError(results[0].reason?.response?.data?.error || 'Failed to load dashboard stats');
+                // Don't show hard error for 403, just stay empty/locked
+                if (results[0].reason?.response?.status !== 403) {
+                    setDashError(results[0].reason?.response?.data?.error || 'Failed to load dashboard stats');
+                }
             }
 
-            if (results[1].status === 'fulfilled') {
+            if (results[1] && results[1].status === 'fulfilled') {
                 setTargetData(results[1].value.data);
             }
         } catch (err) {
