@@ -44,9 +44,15 @@ app.use(cors({
     credentials: true,
 }));
 
-app.use(express.json());
+// Middleware - ORDER MATTERS
 app.use(helmet({ crossOriginResourcePolicy: false }));
 app.use(morgan('dev'));
+
+// Razorpay Webhook needs RAW body for signature verification
+// This must come BEFORE express.json()
+app.use('/api/razorpay/webhook', express.raw({ type: 'application/json' }));
+
+app.use(express.json());
 const os = require('os');
 const uploadDir = process.env.VERCEL
     ? path.join(os.tmpdir(), 'uploads')
