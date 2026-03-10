@@ -8,12 +8,12 @@ const { getEndOfDay } = require('../controllers/endOfDayController');
 router.use(authenticate);
 
 router.get('/stats', getDashboardStats);
-router.get('/fullstats', getFullDashboardStats);
-router.get('/daily', getDailySales);
-router.get('/profit', getProfitAnalysis);
-router.get('/trend', getTrendData);
+router.get('/fullstats', requirePlan('gold'), getFullDashboardStats);
+router.get('/daily', requirePlan('gold'), getDailySales);
+router.get('/profit', requirePlan('gold'), getProfitAnalysis);
+router.get('/trend', requirePlan('gold'), getTrendData);
 router.get('/advanced', requirePlan('gold'), getAdvancedAnalytics);
-router.get('/end-of-day', getEndOfDay);
+router.get('/end-of-day', requirePlan('gold'), getEndOfDay);
 
 module.exports = router;
 

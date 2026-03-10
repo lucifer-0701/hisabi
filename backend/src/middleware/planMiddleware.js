@@ -1,35 +1,5 @@
 const { Shop } = require('../../../database/models');
-
-const PLAN_HIERARCHY = { free: 0, gold: 1, premium: 2 };
-
-const PLAN_LIMITS = {
-    free: {
-        maxProducts: 50,
-        exportReports: false,
-        advancedAnalytics: false,
-        multiUser: false,
-        invoiceHistoryMonths: 6,
-        customBranding: false,
-    },
-    gold: {
-        maxProducts: Infinity,
-        exportReports: true,
-        advancedAnalytics: true,
-        multiUser: true,
-        invoiceHistoryMonths: 6,
-        customBranding: false,
-    },
-    premium: {
-        maxProducts: Infinity,
-        exportReports: true,
-        advancedAnalytics: true,
-        multiUser: true,
-        invoiceHistoryMonths: Infinity,
-        customBranding: true,
-    },
-};
-
-const getPlanLimits = (plan) => PLAN_LIMITS[plan] || PLAN_LIMITS.free;
+const { PLAN_HIERARCHY, PLAN_LIMITS, getPlanLimits } = require('../utils/planUtils');
 
 /**
  * Middleware: require minimum plan level

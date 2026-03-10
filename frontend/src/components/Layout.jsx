@@ -7,9 +7,10 @@ import {
     LayoutDashboard, ShoppingCart, Package, FileText, BarChart2,
     Users, Truck, Wallet, RotateCcw, ShoppingBag, User,
     LogOut, Menu, X, ChevronRight, Store,
-    PackageCheck, Ticket, ClipboardList, Target, Globe, HelpCircle, Mail, Crown
+    PackageCheck, Ticket, ClipboardList, Target, Globe, HelpCircle, Mail, Crown, Lock
 } from 'lucide-react';
 import PricingModal from './PricingModal';
+import { usePlan } from '../hooks/usePlan';
 
 
 const NAV = [
@@ -53,26 +54,43 @@ const NAV = [
 ];
 
 
-const NavItem = ({ item, isActive, onClick, isRTL }) => {
+const NavItem = ({ item, isActive, onClick, isRTL, locked, onLockClick }) => {
     const Icon = item.icon;
     const { t } = useTranslation();
+
+    const handleClick = (e) => {
+        if (locked) {
+            e.preventDefault();
+            onLockClick?.();
+            return;
+        }
+        onClick?.();
+    };
+
     return (
         <Link
-            to={item.href}
-            onClick={onClick}
-            className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 ${isActive
+            to={locked ? '#' : item.href}
+            onClick={handleClick}
+            className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 relative ${isActive
                 ? 'bg-blue-600 text-white shadow-md shadow-blue-600/25'
                 : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
-                }`}
+                } ${locked ? 'opacity-80' : ''}`}
         >
             <Icon className={`w-[18px] h-[18px] flex-shrink-0 transition-transform duration-150 ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-700 group-hover:scale-110'}`} />
             <span className="truncate">{t(item.name)}</span>
-            {isActive && <ChevronRight className={`w-3.5 h-3.5 ${isRTL ? 'mr-auto rotate-180' : 'ml-auto'} opacity-60`} />}
+
+            {locked && (
+                <div className={`${isRTL ? 'mr-auto' : 'ml-auto'} p-1 bg-slate-100 rounded-lg group-hover:bg-blue-100 transition-colors`}>
+                    <Lock className="w-2.5 h-2.5 text-slate-400 group-hover:text-blue-600" />
+                </div>
+            )}
+
+            {isActive && !locked && <ChevronRight className={`w-3.5 h-3.5 ${isRTL ? 'mr-auto rotate-180' : 'ml-auto'} opacity-60`} />}
         </Link>
     );
 };
 
-const Sidebar = ({ location, onClose }) => {
+const Sidebar = ({ location, onClose, isLocked, onUpgradeTrigger }) => {
     const { user, logout } = useAuth();
     const { t, i18n } = useTranslation();
     const isRTL = i18n.language === 'ar';
@@ -124,6 +142,8 @@ const Sidebar = ({ location, onClose }) => {
                                     isActive={location.pathname === item.href}
                                     onClick={onClose}
                                     isRTL={isRTL}
+                                    locked={isLocked(item.href)}
+                                    onLockClick={onUpgradeTrigger}
                                 />
                             ))}
                         </div>
@@ -244,6 +264,7 @@ const UserDropdown = ({ user, handleLogout, isRTL, t }) => {
 
 const Layout = () => {
     const { user, logout } = useAuth();
+    const { isLocked } = usePlan();
     const { t, i18n } = useTranslation();
     const isRTL = i18n.language === 'ar';
     const location = useLocation();
@@ -265,7 +286,12 @@ const Layout = () => {
         <div className={`min-h-screen bg-slate-50 flex ${isRTL ? 'font-arabic' : ''}`} dir={isRTL ? 'rtl' : 'ltr'}>
             {/* Desktop sidebar */}
             <div className={`hidden lg:flex flex-col w-64 bg-white border-r border-slate-100 fixed inset-y-0 ${isRTL ? 'right-0' : 'left-0'} z-30`}>
-                <Sidebar location={location} onClose={null} />
+                <Sidebar
+                    location={location}
+                    onClose={null}
+                    isLocked={isLocked}
+                    onUpgradeTrigger={() => setShowPricing(true)}
+                />
             </div>
 
             {/* Mobile overlay */}
@@ -279,7 +305,12 @@ const Layout = () => {
 
             {/* Mobile drawer */}
             <div className={`fixed inset-y-0 ${isRTL ? 'right-0' : 'left-0'} z-50 w-72 bg-white border-r border-slate-100 shadow-2xl transform transition-transform duration-300 ease-out lg:hidden ${mobileOpen ? 'translate-x-0' : (isRTL ? 'translate-x-full' : '-translate-x-full')}`}>
-                <Sidebar location={location} onClose={() => setMobileOpen(false)} />
+                <Sidebar
+                    location={location}
+                    onClose={() => setMobileOpen(false)}
+                    isLocked={isLocked}
+                    onUpgradeTrigger={() => setShowPricing(true)}
+                />
             </div>
 
             {/* Main content */}

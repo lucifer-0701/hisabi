@@ -19,6 +19,7 @@ import {
     Crown,
     Check
 } from 'lucide-react';
+import FeatureGuard from '../components/FeatureGuard';
 
 const Profile = () => {
     const { user, setUser } = useAuth();
@@ -273,54 +274,49 @@ const Profile = () => {
                 </div>
 
                 {/* Premium Branding Section */}
-                <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 relative overflow-hidden group">
-                    {!isPremium && (
-                        <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] z-20 flex flex-col items-center justify-center p-6 text-center">
-                            <div className="w-16 h-16 bg-white rounded-2xl shadow-xl flex items-center justify-center mb-4"><Crown className="w-8 h-8 text-amber-500" /></div>
-                            <h4 className="text-xl font-black text-slate-900">Custom Branding</h4>
-                            <p className="text-slate-500 text-sm mt-1 max-w-sm">Upload your own logo and set your brand colors on the Premium plan.</p>
+                <FeatureGuard feature="customBranding">
+                    <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:scale-110 transition-transform duration-700">
+                            <Palette className="w-32 h-32" />
                         </div>
-                    )}
-                    <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:scale-110 transition-transform duration-700">
-                        <Palette className="w-32 h-32" />
-                    </div>
-                    <div className="flex items-center gap-3 mb-8">
-                        <div className="p-2.5 bg-amber-50 text-amber-600 rounded-xl"><Sparkles className="w-5 h-5" /></div>
-                        <h2 className="text-xl font-black text-slate-900 tracking-tight">Premium Branding</h2>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
-                        <div className="space-y-4">
-                            <label className="text-sm font-black text-slate-700 ml-1">Shop Logo</label>
-                            <div className="flex items-center gap-6">
-                                <div className="w-24 h-24 rounded-3xl bg-slate-50 border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden relative group/logo cursor-pointer">
-                                    {logoPreview ? <img src={logoPreview} alt="Logo" className="w-full h-full object-contain p-2" /> : <Upload className="w-8 h-8 text-slate-300" />}
-                                    <input type="file" accept="image/*" onChange={handleLogoChange} disabled={!isPremium} className="absolute inset-0 opacity-0 cursor-pointer" />
-                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/logo:opacity-100 flex items-center justify-center transition-opacity"><Upload className="w-6 h-6 text-white" /></div>
+                        <div className="flex items-center gap-3 mb-8">
+                            <div className="p-2.5 bg-amber-50 text-amber-600 rounded-xl"><Sparkles className="w-5 h-5" /></div>
+                            <h2 className="text-xl font-black text-slate-900 tracking-tight">Premium Branding</h2>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
+                            <div className="space-y-4">
+                                <label className="text-sm font-black text-slate-700 ml-1">Shop Logo</label>
+                                <div className="flex items-center gap-6">
+                                    <div className="w-24 h-24 rounded-3xl bg-slate-50 border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden relative group/logo cursor-pointer">
+                                        {logoPreview ? <img src={logoPreview} alt="Logo" className="w-full h-full object-contain p-2" /> : <Upload className="w-8 h-8 text-slate-300" />}
+                                        <input type="file" accept="image/*" onChange={handleLogoChange} className="absolute inset-0 opacity-0 cursor-pointer" />
+                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/logo:opacity-100 flex items-center justify-center transition-opacity"><Upload className="w-6 h-6 text-white" /></div>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-xs font-bold text-slate-700">PNG, JPG or SVG</p>
+                                        <p className="text-[10px] text-slate-400 font-medium text-wrap">Square, transparent background recommended</p>
+                                    </div>
                                 </div>
-                                <div className="space-y-1">
-                                    <p className="text-xs font-bold text-slate-700">PNG, JPG or SVG</p>
-                                    <p className="text-[10px] text-slate-400 font-medium text-wrap">Square, transparent background recommended</p>
+                            </div>
+                            <div className="space-y-4">
+                                <label className="text-sm font-black text-slate-700 ml-1">Brand Color</label>
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-2xl shadow-inner border border-white relative overflow-hidden" style={{ backgroundColor: profileData.brand_color }}>
+                                        <input type="color" name="brand_color" value={profileData.brand_color} onChange={handleChange} className="absolute inset-0 opacity-0 cursor-pointer w-[200%] h-[200%] -translate-x-1/4 -translate-y-1/4" />
+                                    </div>
+                                    <input type="text" name="brand_color" value={profileData.brand_color} onChange={handleChange} className="flex-1 px-4 py-2.5 bg-slate-50 rounded-xl border border-transparent font-mono text-xs font-bold text-slate-600 uppercase" />
+                                </div>
+                                <div className="flex gap-2">
+                                    {['#3b82f6', '#0d9488', '#8b5cf6', '#f43f5e', '#f59e0b', '#0f172a'].map(color => (
+                                        <button key={color} type="button" onClick={() => handleChange({ target: { name: 'brand_color', value: color } })} className={`w-6 h-6 rounded-full border-2 transition-transform hover:scale-110 flex items-center justify-center ${profileData.brand_color === color ? 'border-slate-400' : 'border-transparent'}`} style={{ backgroundColor: color }}>
+                                            {profileData.brand_color === color && <Check className="w-3 h-3 text-white" />}
+                                        </button>
+                                    ))}
                                 </div>
                             </div>
                         </div>
-                        <div className="space-y-4">
-                            <label className="text-sm font-black text-slate-700 ml-1">Brand Color</label>
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-2xl shadow-inner border border-white relative overflow-hidden" style={{ backgroundColor: profileData.brand_color }}>
-                                    <input type="color" name="brand_color" value={profileData.brand_color} onChange={handleChange} disabled={!isPremium} className="absolute inset-0 opacity-0 cursor-pointer w-[200%] h-[200%] -translate-x-1/4 -translate-y-1/4" />
-                                </div>
-                                <input type="text" name="brand_color" value={profileData.brand_color} onChange={handleChange} disabled={!isPremium} className="flex-1 px-4 py-2.5 bg-slate-50 rounded-xl border border-transparent font-mono text-xs font-bold text-slate-600 uppercase" />
-                            </div>
-                            <div className="flex gap-2">
-                                {['#3b82f6', '#0d9488', '#8b5cf6', '#f43f5e', '#f59e0b', '#0f172a'].map(color => (
-                                    <button key={color} type="button" onClick={() => handleChange({ target: { name: 'brand_color', value: color } })} disabled={!isPremium} className={`w-6 h-6 rounded-full border-2 transition-transform hover:scale-110 flex items-center justify-center ${profileData.brand_color === color ? 'border-slate-400' : 'border-transparent'}`} style={{ backgroundColor: color }}>
-                                        {profileData.brand_color === color && <Check className="w-3 h-3 text-white" />}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
                     </div>
-                </div>
+                </FeatureGuard>
 
                 <div className="flex justify-end pt-4">
                     <button type="submit" disabled={saving} className="flex items-center gap-3 px-10 py-4 bg-blue-600 text-white rounded-[1.5rem] hover:bg-blue-700 disabled:bg-blue-300 transition-all font-black text-base shadow-xl shadow-blue-500/20 active:scale-95">

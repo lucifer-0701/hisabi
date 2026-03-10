@@ -170,11 +170,14 @@ const listInvoices = async (req, res) => {
 
         let where = { shop_id };
 
-        // Phase 7: History Retention (Premium gets unlimited, others 6 months)
-        if (shop.plan !== 'premium') {
-            const sixMonthsAgo = new Date();
-            sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-            where.created_at = { [Op.gte]: sixMonthsAgo };
+        // History Retention (Premium gets unlimited, others based on plan limits)
+        const { getPlanLimits } = require('../middleware/planMiddleware');
+        const { historyMonths } = getPlanLimits(shop.plan);
+
+        if (historyMonths !== Infinity) {
+            const cutoffDate = new Date();
+            cutoffDate.setMonth(cutoffDate.getMonth() - historyMonths);
+            where.created_at = { [Op.gte]: cutoffDate };
         }
 
         const invoices = await Invoice.findAndCountAll({

@@ -1,16 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Users, UserPlus, Trash2, Shield, ShieldAlert, Loader2, Search, X } from 'lucide-react';
-import api from '../api/axios';
+import { usePlan } from '../hooks/usePlan';
 
 const Staff = () => {
     const { t } = useTranslation();
+    const { limits } = usePlan();
     const [staff, setStaff] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [formData, setFormData] = useState({ username: '', password: '' });
     const [submitting, setSubmitting] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+
+    const maxStaff = limits?.maxStaff || 2;
+    const isLimitReached = staff.length >= maxStaff;
 
     useEffect(() => {
         fetchStaff();
@@ -29,6 +30,10 @@ const Staff = () => {
 
     const handleAddStaff = async (e) => {
         e.preventDefault();
+        if (isLimitReached) {
+            alert(`Limit reached. ${maxStaff} staff max.`);
+            return;
+        }
         setSubmitting(true);
         try {
             await api.post('/auth/staff', formData);
@@ -66,13 +71,22 @@ const Staff = () => {
                     <h1 className="text-2xl font-black text-slate-900 tracking-tight">{t('staff.title')}</h1>
                     <p className="text-sm text-slate-500 font-medium">{t('staff.subtitle')}</p>
                 </div>
-                <button
-                    onClick={() => setShowModal(true)}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-blue-600/20 active:scale-95"
-                >
-                    <UserPlus className="w-4 h-4" />
-                    {t('staff.add_button')}
-                </button>
+                <div className="flex flex-col sm:items-end gap-2">
+                    <button
+                        onClick={() => setShowModal(true)}
+                        disabled={isLimitReached}
+                        className={`inline-flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-xl transition-all shadow-lg active:scale-95 ${isLimitReached
+                            ? 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none'
+                            : 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-600/20'
+                            }`}
+                    >
+                        {isLimitReached ? <Lock className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
+                        {t('staff.add_button')}
+                    </button>
+                    <p className={`text-[10px] font-black uppercase tracking-widest ${isLimitReached ? 'text-red-500' : 'text-slate-400'}`}>
+                        Usage: {staff.length} / {maxStaff === Infinity ? '∞' : maxStaff}
+                    </p>
+                </div>
             </div>
 
             {/* Stats Summary */}

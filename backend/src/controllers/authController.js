@@ -191,6 +191,18 @@ const createStaff = async (req, res) => {
     try {
         const { username, password } = req.body;
         const shop_id = req.user.shop_id;
+        const { getPlanLimits } = require('../middleware/planMiddleware');
+        const shop = await Shop.findByPk(shop_id);
+        const { maxStaff } = getPlanLimits(shop.plan);
+
+        // Enforce staff limit
+        const currentStaffCount = await User.count({ where: { shop_id, role: 'staff' } });
+        if (currentStaffCount >= maxStaff) {
+            return res.status(403).json({
+                error: 'Staff limit reached',
+                message: `${shop.plan.charAt(0).toUpperCase() + shop.plan.slice(1)} plan allows only ${maxStaff} staff members. Upgrade to add more.`
+            });
+        }
 
         // Check if username exists globally
         const existingUser = await User.findOne({ where: { username } });
