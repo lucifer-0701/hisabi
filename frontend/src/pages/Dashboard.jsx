@@ -8,6 +8,7 @@ import {
     Award, Medal, Target, ChevronRight
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { usePlan } from '../hooks/usePlan';
 
 
 const SkeletonCard = () => (
