@@ -13,7 +13,12 @@ export const IMAGE_BASE_URL = BASE_URL;
 // Add a request interceptor to add the auth token to requests
 api.interceptors.request.use(
     (config) => {
-        const token = localStorage.getItem('token');
+        // Use superAdminToken for internal admin routes, standard token for shop routes
+        const isAdminRoute = config.url.startsWith('/super-admin') && !config.url.includes('/public/');
+        const token = isAdminRoute
+            ? localStorage.getItem('superAdminToken')
+            : localStorage.getItem('token');
+
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
@@ -29,11 +34,20 @@ api.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response && error.response.status === 401) {
-            // Clear token and redirect to login if unauthorized
-            // Note: This might cause loop if not careful, but basic implementation
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            window.location.href = '/login';
+            const isAdminRoute = error.config.url.startsWith('/super-admin');
+
+            if (isAdminRoute) {
+                localStorage.removeItem('superAdminToken');
+                if (window.location.pathname !== '/super-admin-login') {
+                    window.location.href = '/super-admin-login';
+                }
+            } else {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                if (window.location.pathname !== '/login') {
+                    window.location.href = '/login';
+                }
+            }
         }
         return Promise.reject(error);
     }

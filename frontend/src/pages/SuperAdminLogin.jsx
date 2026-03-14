@@ -41,7 +41,7 @@ const SuperAdminLogin = () => {
         setError('');
         try {
             const response = await api.post('/super-admin/login', credentials);
-            localStorage.setItem('token', response.data.token);
+            localStorage.setItem('superAdminToken', response.data.token);
             navigate('/super-admin-dashboard');
         } catch (err) {
             setError(err.response?.data?.error || 'Login connection failed.');

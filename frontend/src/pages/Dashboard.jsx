@@ -206,7 +206,7 @@ const Dashboard = () => {
             {ads.length > 0 && (
                 <div className="w-full h-32 sm:h-40 rounded-2xl overflow-hidden border border-slate-100 shadow-sm relative group">
                     <a href={ads[0].link_url || '#'} target={ads[0].link_url ? "_blank" : "_self"} rel="noopener noreferrer">
-                        <img src={ads[0].image_url} alt={ads[0].title} className="w-full h-full object-cover grayscale-[0.3] group-hover:grayscale-0 transition-all duration-700" />
+                        <img src={ads[0].image_url} alt={ads[0].title} className="w-full h-full object-cover grayscale-[0.3] group-hover:grayscale-0 transition-all duration-700" loading="lazy" />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                         {ads[0].title && (
                             <div className="absolute bottom-4 left-6">

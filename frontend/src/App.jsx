@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -27,6 +27,27 @@ const Help = lazy(() => import('./pages/Help'));
 const SuperAdminLogin = lazy(() => import('./pages/SuperAdminLogin'));
 const SuperAdminDashboard = lazy(() => import('./pages/SuperAdminDashboard'));
 
+const TitleManager = () => {
+  const location = useLocation();
+
+  React.useEffect(() => {
+    const path = location.pathname;
+    let title = 'Hisabi-POS';
+
+    if (path.includes('/dashboard')) title = 'Dashboard | Hisabi-POS';
+    else if (path.includes('/pos')) title = 'Point of Sale | Hisabi-POS';
+    else if (path.includes('/products')) title = 'Inventory Management | Hisabi-POS';
+    else if (path.includes('/invoices')) title = 'Billing & Invoices | Hisabi-POS';
+    else if (path.includes('/reports')) title = 'Business Analytics | Hisabi-POS';
+    else if (path.includes('/login')) title = 'Merchant Login | Hisabi-POS';
+    else if (path.includes('/super-admin')) title = 'System Administration | Hisabi-POS';
+
+    document.title = title;
+  }, [location]);
+
+  return null;
+};
+
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-screen bg-slate-50">
     <div className="flex flex-col items-center gap-4">
@@ -39,6 +60,7 @@ const PageLoader = () => (
 function App() {
   return (
     <BrowserRouter>
+      <TitleManager />
       <AuthProvider>
         <Suspense fallback={<PageLoader />}>
           <Routes>

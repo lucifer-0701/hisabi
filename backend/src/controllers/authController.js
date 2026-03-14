@@ -154,6 +154,14 @@ const login = async (req, res) => {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
+        // Check if Shop is Active
+        if (shop.active === false) {
+            return res.status(403).json({
+                error: 'Account Suspended',
+                message: 'Your shop access has been suspended. Please contact platform support.'
+            });
+        }
+
         // Generate Token
         const token = generateToken({ id: user.id, shop_id: shop.id, role: user.role });
 

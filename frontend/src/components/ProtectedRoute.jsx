@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 
 const ProtectedRoute = ({ children }) => {
     const { user, loading } = useAuth();
+    const storedUser = localStorage.getItem('user');
 
     if (loading) {
         return (
@@ -13,7 +14,8 @@ const ProtectedRoute = ({ children }) => {
         );
     }
 
-    if (!user) {
+    // If no user in state AND no user in storage, then redirect to login
+    if (!user && !storedUser) {
         return <Navigate to="/login" />;
     }
 
@@ -25,7 +27,7 @@ const ProtectedRoute = ({ children }) => {
     ];
     const currentPath = window.location.pathname;
 
-    if (user.role === 'staff' && restrictedPaths.includes(currentPath)) {
+    if (user?.role === 'staff' && restrictedPaths.includes(currentPath)) {
         return <Navigate to="/dashboard" replace />;
     }
 

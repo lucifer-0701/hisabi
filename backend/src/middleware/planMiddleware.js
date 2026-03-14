@@ -13,6 +13,13 @@ const requirePlan = (minPlan) => {
                 return res.status(404).json({ error: 'Shop not found' });
             }
 
+            if (shop.active === false) {
+                return res.status(403).json({
+                    error: 'Account Suspended',
+                    message: 'Access denied. Your shop is currently suspended.'
+                });
+            }
+
             const shopLevel = PLAN_HIERARCHY[shop.plan] || 0;
             const requiredLevel = PLAN_HIERARCHY[minPlan] || 0;
 

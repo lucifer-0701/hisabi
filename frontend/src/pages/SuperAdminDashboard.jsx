@@ -29,10 +29,33 @@ const SuperAdminDashboard = () => {
     const [announcementForm, setAnnouncementForm] = useState({ message: '', type: 'info', active: true });
 
     useEffect(() => {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('superAdminToken');
         if (!token) { navigate('/super-admin-login'); return; }
         fetchData();
+        setupInactivityTimer();
     }, [view]);
+
+    // Session Inactivity Timer
+    const setupInactivityTimer = () => {
+        let timer;
+        const resetTimer = () => {
+            if (timer) clearTimeout(timer);
+            // 15 minutes = 15 * 60 * 1000 ms
+            timer = setTimeout(() => {
+                handleLogout();
+            }, 15 * 60 * 1000);
+        };
+
+        const events = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart'];
+        events.forEach(evt => window.addEventListener(evt, resetTimer));
+
+        resetTimer(); // Initialize timer
+
+        return () => {
+            if (timer) clearTimeout(timer);
+            events.forEach(evt => window.removeEventListener(evt, resetTimer));
+        };
+    };
 
     const fetchData = async () => {
         setLoading(true);
@@ -58,7 +81,7 @@ const SuperAdminDashboard = () => {
             }
         } catch (error) {
             if (error.response?.status === 401 || error.response?.status === 403) {
-                localStorage.removeItem('token');
+                localStorage.removeItem('superAdminToken');
                 navigate('/super-admin-login');
             }
         } finally {
@@ -67,7 +90,7 @@ const SuperAdminDashboard = () => {
     };
 
     const handleLogout = () => {
-        localStorage.removeItem('token');
+        localStorage.removeItem('superAdminToken');
         navigate('/super-admin-login');
     };
 
