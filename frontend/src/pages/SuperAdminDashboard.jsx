@@ -27,7 +27,7 @@ const SuperAdminDashboard = () => {
     });
 
     useEffect(() => {
-        const token = localStorage.getItem('superAdminToken');
+        const token = localStorage.getItem('token');
         if (!token) {
             navigate('/super-admin-login');
             return;
@@ -38,18 +38,16 @@ const SuperAdminDashboard = () => {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('superAdminToken');
-            const headers = { Authorization: `Bearer ${token}` };
             const [adsRes, discsRes] = await Promise.all([
-                api.get('/super-admin/ads', { headers }),
-                api.get('/super-admin/discounts', { headers })
+                api.get('/super-admin/ads'),
+                api.get('/super-admin/discounts')
             ]);
             setAds(adsRes.data);
             setDiscounts(discsRes.data);
         } catch (error) {
             console.error('Fetch error:', error);
             if (error.response?.status === 401 || error.response?.status === 403) {
-                localStorage.removeItem('superAdminToken');
+                localStorage.removeItem('token');
                 navigate('/super-admin-login');
             }
         } finally {
@@ -58,19 +56,17 @@ const SuperAdminDashboard = () => {
     };
 
     const handleLogout = () => {
-        localStorage.removeItem('superAdminToken');
+        localStorage.removeItem('token');
         navigate('/super-admin-login');
     };
 
     const handleAdSubmit = async (e) => {
         e.preventDefault();
-        const token = localStorage.getItem('superAdminToken');
-        const headers = { Authorization: `Bearer ${token}` };
         try {
             if (editItem) {
-                await api.put(`/super-admin/ads/${editItem.id}`, adForm, { headers });
+                await api.put(`/super-admin/ads/${editItem.id}`, adForm);
             } else {
-                await api.post('/super-admin/ads', adForm, { headers });
+                await api.post('/super-admin/ads', adForm);
             }
             setIsModalOpen(false);
             setEditItem(null);
@@ -80,13 +76,11 @@ const SuperAdminDashboard = () => {
 
     const handleDiscountSubmit = async (e) => {
         e.preventDefault();
-        const token = localStorage.getItem('superAdminToken');
-        const headers = { Authorization: `Bearer ${token}` };
         try {
             if (editItem) {
-                await api.put(`/super-admin/discounts/${editItem.id}`, discountForm, { headers });
+                await api.put(`/super-admin/discounts/${editItem.id}`, discountForm);
             } else {
-                await api.post('/super-admin/discounts', discountForm, { headers });
+                await api.post('/super-admin/discounts', discountForm);
             }
             setIsModalOpen(false);
             setEditItem(null);
@@ -96,11 +90,9 @@ const SuperAdminDashboard = () => {
 
     const handleDelete = async (type, id) => {
         if (!window.confirm('Are you sure?')) return;
-        const token = localStorage.getItem('superAdminToken');
-        const headers = { Authorization: `Bearer ${token}` };
         try {
             const endpoint = type === 'ad' ? `/super-admin/ads/${id}` : `/super-admin/discounts/${id}`;
-            await api.delete(endpoint, { headers });
+            await api.delete(endpoint);
             fetchData();
         } catch (err) { alert('Delete failed'); }
     };
