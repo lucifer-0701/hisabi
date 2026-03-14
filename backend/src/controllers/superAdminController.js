@@ -157,10 +157,15 @@ const updateShop = async (req, res) => {
         const shop = await Shop.findByPk(id);
         if (!shop) return res.status(404).json({ error: 'Shop not found' });
 
-        await shop.update({ active, plan });
+        const updateData = {};
+        if (active !== undefined) updateData.active = active;
+        if (plan !== undefined) updateData.plan = plan;
+
+        console.log(`[SuperAdmin] Updating shop ${id}:`, updateData);
+        await shop.update(updateData);
 
         await logActivity(req.superAdmin.username, 'UPDATE_SHOP', {
-            shopId: id, shopName: shop.name, changes: { active, plan }
+            shopId: id, shopName: shop.name, changes: updateData
         });
 
         res.json({ message: 'Shop updated successfully', shop });

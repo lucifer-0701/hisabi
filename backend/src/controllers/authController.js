@@ -155,7 +155,9 @@ const login = async (req, res) => {
         }
 
         // Check if Shop is Active
-        if (shop.active === false) {
+        console.log(`[Login] Checking active status for Shop ${shop.id}: ${shop.active} (Type: ${typeof shop.active})`);
+        if (shop.active === false || shop.active === 0 || shop.active === 'false') {
+            console.warn(`[Login] Access denied for Shop ${shop.id}: Suspended`);
             return res.status(403).json({
                 error: 'Account Suspended',
                 message: 'Your shop access has been suspended. Please contact platform support.'
@@ -165,7 +167,9 @@ const login = async (req, res) => {
         // Generate Token
         const token = generateToken({ id: user.id, shop_id: shop.id, role: user.role });
 
-        res.json({
+        console.log(`[Login] Successful for ${username}. Shop Plan: ${shop.plan}, Active: ${shop.active}`);
+
+        const responseData = {
             message: 'Login successful',
             token,
             user: {
@@ -187,7 +191,9 @@ const login = async (req, res) => {
                 brand_logo: shop.brand_logo,
                 brand_color: shop.brand_color
             }
-        });
+        };
+
+        res.json(responseData);
 
     } catch (error) {
         console.error('Login Error:', error);
@@ -296,6 +302,15 @@ const updateProfile = async (req, res) => {
         const { username, password, shop_name, address, phone, email, trn, brand_logo, brand_color } = req.body;
         const user_id = req.user.id;
         const shop_id = req.user.shop_id;
+        const user_role = req.user.role;
+
+        // Staff Restrictions: Only admins can update profiles
+        if (user_role === 'staff') {
+            return res.status(403).json({
+                error: 'Forbidden',
+                message: 'Staff members are not permitted to modify account settings. Please contact your administrator.'
+            });
+        }
 
         const user = await User.findByPk(user_id);
         const shop = await Shop.findByPk(shop_id);
@@ -303,6 +318,14 @@ const updateProfile = async (req, res) => {
         if (!user || !shop) {
             return res.status(404).json({ error: 'User or Shop not found' });
         }
+        // The provided code snippet seems to be intended for a different controller (e.g., superAdminController)
+        // as it references `req.superAdmin.username`, `id` (instead of `shop_id`), `active`, and `plan`
+        // in a context that doesn't align with `authController.js`'s `updateProfile` function.
+        // Applying it directly would result in a syntactically incorrect file due to undefined variables
+        // and incorrect logic for this specific function.
+        // Therefore, the requested change cannot be applied faithfully and correctly to this file.
+        // If the intention was to add a log for profile updates, it would need to be adapted.
+        // For example: console.log(`[Profile Update] User ${user_id} updated profile for shop ${shop_id}`);
 
         // Update User details
         if (username) user.username = username;

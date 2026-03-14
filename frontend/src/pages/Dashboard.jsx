@@ -114,8 +114,9 @@ const Dashboard = () => {
     };
 
 
-    const kpis = stats ? [
+    const allKpis = stats ? [
         {
+            id: 'today_revenue',
             label: t('dashboard.kpi.today_revenue'),
             value: `${currency} ${Number(stats.todayRevenue).toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
             icon: DollarSign,
@@ -123,6 +124,7 @@ const Dashboard = () => {
             sub: t('dashboard.kpi.today_revenue_sub'),
         },
         {
+            id: 'total_invoices',
             label: t('dashboard.kpi.total_invoices'),
             value: Number(stats.totalInvoices).toLocaleString(),
             icon: FileText,
@@ -130,6 +132,7 @@ const Dashboard = () => {
             sub: t('dashboard.kpi.total_invoices_sub'),
         },
         {
+            id: 'today_expenses',
             label: t('dashboard.kpi.today_expenses'),
             value: `${currency} ${Number(stats.todayExpenses || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
             icon: Wallet,
@@ -137,6 +140,7 @@ const Dashboard = () => {
             sub: t('dashboard.kpi.today_expenses_sub'),
         },
         {
+            id: 'total_products',
             label: t('dashboard.kpi.total_products'),
             value: Number(stats.totalProducts).toLocaleString(),
             icon: Package,
@@ -144,6 +148,10 @@ const Dashboard = () => {
             sub: t('dashboard.kpi.total_products_sub'),
         },
     ] : [];
+
+    const kpis = user?.role === 'staff'
+        ? allKpis.filter(k => k.id !== 'today_expenses')
+        : allKpis;
 
     const quickActions = [
         {
@@ -230,9 +238,9 @@ const Dashboard = () => {
             )}
 
             {/* ── KPI Cards ── */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className={`grid grid-cols-2 ${user?.role === 'staff' ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-4`}>
                 {loading
-                    ? Array(4).fill(0).map((_, i) => <SkeletonCard key={i} />)
+                    ? Array(user?.role === 'staff' ? 3 : 4).fill(0).map((_, i) => <SkeletonCard key={i} />)
                     : kpis.map((k, i) => <KpiCard key={i} {...k} />)
                 }
             </div>

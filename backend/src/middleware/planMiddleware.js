@@ -13,7 +13,7 @@ const requirePlan = (minPlan) => {
                 return res.status(404).json({ error: 'Shop not found' });
             }
 
-            if (shop.active === false) {
+            if (shop.active === false || shop.active === 0 || shop.active === 'false') {
                 return res.status(403).json({
                     error: 'Account Suspended',
                     message: 'Access denied. Your shop is currently suspended.'

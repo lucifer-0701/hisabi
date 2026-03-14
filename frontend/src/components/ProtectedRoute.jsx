@@ -23,7 +23,7 @@ const ProtectedRoute = ({ children }) => {
     const restrictedPaths = [
         '/reports', '/suppliers', '/purchases',
         '/expenses', '/end-of-day', '/discount-codes',
-        '/targets', '/staff'
+        '/targets', '/staff', '/profile'
     ];
     const currentPath = window.location.pathname;
 

@@ -212,14 +212,16 @@ const UserDropdown = ({ user, handleLogout, isRTL, t }) => {
                                     <p className="text-[10px] font-bold text-slate-400 truncate">{user?.shop?.name}</p>
                                 </div>
 
-                                <Link
-                                    to="/profile"
-                                    onClick={() => setIsOpen(false)}
-                                    className={`flex items-center gap-3 px-3 py-2.5 text-xs font-black text-slate-600 hover:text-blue-600 hover:bg-blue-50/50 rounded-xl transition-all ${isRTL ? 'flex-row-reverse text-right' : ''}`}
-                                >
-                                    <User className="w-4 h-4 opacity-70" />
-                                    {t('nav.profile')}
-                                </Link>
+                                {user?.role !== 'staff' && (
+                                    <Link
+                                        to="/profile"
+                                        onClick={() => setIsOpen(false)}
+                                        className={`flex items-center gap-3 px-3 py-2.5 text-xs font-black text-slate-600 hover:text-blue-600 hover:bg-blue-50/50 rounded-xl transition-all ${isRTL ? 'flex-row-reverse text-right' : ''}`}
+                                    >
+                                        <User className="w-4 h-4 opacity-70" />
+                                        {t('nav.profile')}
+                                    </Link>
+                                )}
 
                                 <button
                                     onClick={() => setView('language')}
