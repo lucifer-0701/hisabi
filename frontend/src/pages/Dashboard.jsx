@@ -239,8 +239,8 @@ const Dashboard = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Sales Target */}
-                <div className="lg:col-span-1">
-                    {targetData?.currentMonth && (
+                {targetData?.currentMonth && (
+                    <div className="lg:col-span-1">
                         <div className="bg-white rounded-2xl border border-slate-100 p-6 h-full flex flex-col justify-center">
                             <div className="flex items-center justify-between mb-4">
                                 <div className="flex items-center gap-2">
@@ -273,11 +273,11 @@ const Dashboard = () => {
                                 </div>
                             )}
                         </div>
-                    )}
-                </div>
+                    </div>
+                )}
 
                 {/* Quick Actions */}
-                <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className={`${targetData?.currentMonth ? 'lg:col-span-2' : 'lg:col-span-3'} grid grid-cols-1 sm:grid-cols-2 gap-4`}>
                     {quickActions.map((a) => {
                         const Icon = a.icon;
                         return (
