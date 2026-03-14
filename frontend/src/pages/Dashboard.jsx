@@ -132,6 +132,16 @@ const Dashboard = () => {
             sub: t('dashboard.kpi.total_invoices_sub'),
         },
         {
+            id: 'low_stock',
+            label: t('dashboard.kpi.low_stock'),
+            value: stats.lowStockCount,
+            icon: AlertTriangle,
+            iconBg: stats.lowStockCount > 0 ? 'bg-red-500' : 'bg-emerald-500',
+            sub: stats.lowStockCount > 0 ? t('dashboard.kpi.low_stock_required') : t('dashboard.kpi.low_stock_healthy'),
+            subColor: stats.lowStockCount > 0 ? 'text-red-500' : 'text-emerald-600',
+            planLimit: 'reports' // Only Gold/Premium can see accurate low stock count
+        },
+        {
             id: 'today_expenses',
             label: t('dashboard.kpi.today_expenses'),
             value: `${currency} ${Number(stats.todayExpenses || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
@@ -149,9 +159,11 @@ const Dashboard = () => {
         },
     ] : [];
 
-    const kpis = user?.role === 'staff'
-        ? allKpis.filter(k => k.id !== 'today_expenses')
-        : allKpis;
+    const kpis = allKpis.filter(k => {
+        if (user?.role === 'staff' && k.id === 'today_expenses') return false;
+        if (k.planLimit && isLocked(k.planLimit)) return false;
+        return true;
+    });
 
     const quickActions = [
         {
@@ -168,6 +180,13 @@ const Dashboard = () => {
             icon: Package,
             color: 'from-indigo-600 to-indigo-500',
         },
+        ...(!isLocked('/reports') ? [{
+            label: t('dashboard.actions.analytics'),
+            desc: t('dashboard.actions.analytics_desc'),
+            href: '/reports',
+            icon: TrendingUp,
+            color: 'from-slate-800 to-slate-700',
+        }] : []),
     ];
 
     const greeting = () => {
@@ -238,18 +257,18 @@ const Dashboard = () => {
             )}
 
             {/* ── KPI Cards ── */}
-            <div className={`grid grid-cols-2 ${user?.role === 'staff' ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-4`}>
+            <div className={`grid grid-cols-2 sm:grid-cols-3 ${kpis.length >= 5 ? 'lg:grid-cols-5' : kpis.length === 4 ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-4`}>
                 {loading
-                    ? Array(user?.role === 'staff' ? 3 : 4).fill(0).map((_, i) => <SkeletonCard key={i} />)
+                    ? Array(kpis.length || 4).fill(0).map((_, i) => <SkeletonCard key={i} />)
                     : kpis.map((k, i) => <KpiCard key={i} {...k} />)
                 }
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className={`grid grid-cols-1 ${!isLocked('/reports') && targetData?.currentMonth ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-6`}>
                 {/* Sales Target */}
                 {targetData?.currentMonth && (
                     <div className="lg:col-span-1">
-                        <div className="bg-white rounded-2xl border border-slate-100 p-6 h-full flex flex-col justify-center">
+                        <div className="bg-white rounded-3xl border border-slate-100 p-6 h-full flex flex-col justify-center shadow-sm">
                             <div className="flex items-center justify-between mb-4">
                                 <div className="flex items-center gap-2">
                                     <Target className="w-4 h-4 text-blue-600" />
@@ -285,7 +304,7 @@ const Dashboard = () => {
                 )}
 
                 {/* Quick Actions */}
-                <div className={`${targetData?.currentMonth ? 'lg:col-span-2' : 'lg:col-span-3'} grid grid-cols-1 sm:grid-cols-2 gap-4`}>
+                <div className={`${targetData?.currentMonth && !isLocked('/reports') ? 'lg:col-span-2' : targetData?.currentMonth || !isLocked('/reports') ? 'lg:col-span-2' : 'lg:col-span-3'} grid grid-cols-1 sm:grid-cols-2 gap-4 h-fit`}>
                     {quickActions.map((a) => {
                         const Icon = a.icon;
                         return (
@@ -305,6 +324,67 @@ const Dashboard = () => {
                         );
                     })}
                 </div>
+
+                {/* Top Products - Gold/Premium Only */}
+                {!isLocked('/reports') && (
+                    <div className="lg:col-span-1 bg-white rounded-3xl border border-slate-100 overflow-hidden h-fit">
+                        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-50 bg-slate-50/30">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 bg-slate-900 rounded-xl flex items-center justify-center">
+                                    <Award className="w-4 h-4 text-white" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-black text-slate-900">{t('dashboard.top_selling')}</p>
+                                    <p className="text-[10px] text-slate-400 font-medium uppercase tracking-tighter">{t('dashboard.top_selling_sub')}</p>
+                                </div>
+                            </div>
+                            <Link to="/reports" className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1">
+                                {t('common.details')} <ArrowUpRight className="w-3 h-3" />
+                            </Link>
+                        </div>
+
+                        <div className="p-4">
+                            {loading ? (
+                                <div className="space-y-3">
+                                    {Array(4).fill(0).map((_, i) => (
+                                        <div key={i} className="flex items-center gap-3 animate-pulse">
+                                            <div className="skeleton w-7 h-7 rounded-lg flex-shrink-0" />
+                                            <div className="flex-1 space-y-1.5">
+                                                <div className="skeleton h-3 w-3/4 rounded" />
+                                                <div className="skeleton h-2 w-1/4 rounded" />
+                                            </div>
+                                            <div className="skeleton h-4 w-16 rounded" />
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : !stats?.topProducts?.length ? (
+                                <div className="py-12 text-center">
+                                    <div className="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-3">
+                                        <Medal className="w-5 h-5 text-slate-300" />
+                                    </div>
+                                    <p className="text-xs font-bold text-slate-400">{t('dashboard.no_data')}</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-1">
+                                    {stats.topProducts.slice(0, 4).map((p, i) => (
+                                        <div key={i} className="flex items-center gap-3 px-2 py-2.5 rounded-xl hover:bg-slate-50 transition-colors">
+                                            <div className="w-7 flex-shrink-0 flex justify-center text-slate-400">
+                                                <RankBadge rank={i + 1} />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-bold text-slate-900 truncate">{p.name}</p>
+                                                <p className="text-[11px] text-slate-400">{p.quantity} {t('dashboard.units_sold')}</p>
+                                            </div>
+                                            <span className="text-xs font-black text-blue-600 flex-shrink-0">
+                                                {currency} {Number(p.revenue).toLocaleString(undefined, { minimumFractionDigits: 1 })}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
