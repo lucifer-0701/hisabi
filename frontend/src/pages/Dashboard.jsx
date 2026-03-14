@@ -48,6 +48,9 @@ const Dashboard = () => {
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [ads, setAds] = useState([]);
+    const [targetData, setTargetData] = useState(null);
+    const [dashError, setDashError] = useState(null);
+    const currency = user?.shop?.currency || 'AED';
 
     useEffect(() => {
         fetchAll();
