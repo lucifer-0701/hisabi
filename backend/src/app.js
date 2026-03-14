@@ -29,12 +29,10 @@ const superAdminRoutes = require('./routes/superAdminRoutes');
 
 const app = express();
 // ... (omitted)
-app.use('/api/super-admin', superAdminRoutes);
-app.use('/api/auth', authRoutes);
-
 // CORS — allow requests from frontend (Vercel) or localhost in dev
 const allowedOrigins = [
     process.env.FRONTEND_URL,
+    'https://hisabi-pos.netlify.app',
     'http://localhost:5173',
     'http://localhost:3000',
 ].filter(Boolean);
@@ -67,6 +65,7 @@ app.use('/uploads', express.static(uploadDir));
 const { authenticate, requireAdmin } = require('./middleware/auth');
 
 // API Routes
+app.use('/api/super-admin', superAdminRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/invoices', invoiceRoutes);
