@@ -1,3 +1,5 @@
+const express = require('express');
+const router = express.Router();
 const superAdminController = require('../controllers/superAdminController');
 const { authenticateSuperAdmin } = require('../middleware/superAdminAuth');
 const { Advertisement } = require('../../../database/models');
