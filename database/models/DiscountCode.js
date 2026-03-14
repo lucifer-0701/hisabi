@@ -3,7 +3,7 @@ const { sequelize } = require('../database');
 
 const DiscountCode = sequelize.define('DiscountCode', {
     id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
-    shop_id: { type: DataTypes.UUID, allowNull: false },
+    shop_id: { type: DataTypes.UUID, allowNull: true },
     code: { type: DataTypes.STRING(50), allowNull: false },
     type: { type: DataTypes.ENUM('percent', 'fixed'), allowNull: false, defaultValue: 'percent' },
     value: { type: DataTypes.DECIMAL(10, 2), allowNull: false },

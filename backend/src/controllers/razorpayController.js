@@ -1,8 +1,8 @@
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
-const { Shop } = require('../../../database/models');
+const { Shop, DiscountCode } = require('../../../database/models');
 
-// Gracefully skip init if keys are not set — won't crash existing non-India users
+// Gracefully skip init if keys are not set
 const razorpay = process.env.RAZORPAY_KEY_ID
     ? new Razorpay({
         key_id: process.env.RAZORPAY_KEY_ID,
@@ -16,7 +16,7 @@ const PLAN_PRICES_INR = {
     premium: { amount: 99900 }    // ₹999
 };
 
-const GST_RATE = 0.18;
+const PLATFORM_FEE_RATE = 0.02; // 2% platform fee
 
 /**
  * Step 1: Create a Razorpay order before showing checkout UI
@@ -26,7 +26,7 @@ const createOrder = async (req, res) => {
         return res.status(503).json({ error: 'Payment gateway not configured' });
     }
     try {
-        const { plan } = req.body;
+        const { plan, discount_code } = req.body;
         const config = PLAN_PRICES_INR[plan];
         if (!config) return res.status(400).json({ error: 'Invalid plan' });
 
@@ -37,9 +37,35 @@ const createOrder = async (req, res) => {
             return res.status(400).json({ error: 'Razorpay is available for Indian users only' });
         }
 
-        const baseAmount = config.amount;
-        const gstAmount = Math.round(baseAmount * GST_RATE);
-        const totalAmount = baseAmount + gstAmount;
+        let baseAmount = config.amount;
+        let discountAmount = 0;
+
+        // Apply Discount Code if provided
+        if (discount_code) {
+            const discount = await DiscountCode.findOne({
+                where: { code: discount_code, shop_id: null, active: true }
+            });
+
+            if (!discount) {
+                return res.status(400).json({ error: 'Invalid Discount Code' });
+            }
+
+            // Check expiry
+            if (discount.expires_at && new Date(discount.expires_at) < new Date()) {
+                return res.status(400).json({ error: 'Invalid Discount Code' }); // Requirement says "Invalid Discount Code"
+            }
+
+            if (discount.type === 'percent') {
+                discountAmount = Math.round(baseAmount * (discount.value / 100));
+            } else {
+                discountAmount = Math.round(discount.value * 100); // fixed amount to paise
+            }
+
+            baseAmount = Math.max(0, baseAmount - discountAmount);
+        }
+
+        const platformFee = Math.round(baseAmount * PLATFORM_FEE_RATE);
+        const totalAmount = baseAmount + platformFee;
 
         const order = await razorpay.orders.create({
             amount: totalAmount,
@@ -48,14 +74,16 @@ const createOrder = async (req, res) => {
             notes: {
                 shop_id: shop.id,
                 plan,
-                gst_amount: gstAmount
+                platform_fee: platformFee,
+                discount_applied: discountAmount
             }
         });
 
         return res.json({
             order_id: order.id,
             amount: totalAmount,
-            gst: gstAmount,
+            platform_fee: platformFee,
+            discount: discountAmount,
             base: baseAmount,
             currency: 'INR',
             key: process.env.RAZORPAY_KEY_ID

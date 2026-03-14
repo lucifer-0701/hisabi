@@ -24,6 +24,8 @@ const EndOfDay = lazy(() => import('./pages/EndOfDay'));
 const SalesTargets = lazy(() => import('./pages/SalesTargets'));
 const Staff = lazy(() => import('./pages/Staff'));
 const Help = lazy(() => import('./pages/Help'));
+const SuperAdminLogin = lazy(() => import('./pages/SuperAdminLogin'));
+const SuperAdminDashboard = lazy(() => import('./pages/SuperAdminDashboard'));
 
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-screen bg-slate-50">
@@ -67,6 +69,12 @@ function App() {
               <Route path="end-of-day" element={<EndOfDay />} />
               <Route path="help" element={<Help />} />
             </Route>
+
+            {/* Hidden Super Admin Routes */}
+            <Route path="/super-admin-login" element={<SuperAdminLogin />} />
+            <Route path="/super-admin-dashboard" element={<SuperAdminDashboard />} />
+
+            <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </Suspense>
       </AuthProvider>

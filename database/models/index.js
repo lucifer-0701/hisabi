@@ -16,6 +16,8 @@ const StockAdjustment = require('./StockAdjustment');
 const DiscountCode = require('./DiscountCode');
 const SalesTarget = require('./SalesTarget');
 const DuePayment = require('./DuePayment');
+const SuperAdmin = require('./SuperAdmin');
+const Advertisement = require('./Advertisement');
 
 // ─── ALL ASSOCIATIONS (single source of truth) ────────────────────────
 // ... (lines omitted for brevity, but I will target specific insertion points)
@@ -108,6 +110,9 @@ DuePayment.belongsTo(Shop, { foreignKey: 'shop_id', onDelete: 'CASCADE' });
 Invoice.hasMany(DuePayment, { foreignKey: 'invoice_id', as: 'payments', onDelete: 'CASCADE' });
 DuePayment.belongsTo(Invoice, { foreignKey: 'invoice_id' });
 
+// Platform Discount Codes (no shop_id)
+// We'll reuse DiscountCode model but make shop_id optional
+
 // ─── Database Sync ────────────────────────────────────────────────────
 const syncDatabase = async () => {
     try {
@@ -124,5 +129,6 @@ module.exports = {
     Invoice, InvoiceItem, BundleItem,
     Customer, Supplier, Expense,
     PurchaseOrder, PurchaseOrderItem,
-    Return, StockAdjustment, DiscountCode, SalesTarget, DuePayment
+    Return, StockAdjustment, DiscountCode, SalesTarget, DuePayment,
+    SuperAdmin, Advertisement
 };

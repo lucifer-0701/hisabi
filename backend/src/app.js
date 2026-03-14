@@ -25,7 +25,12 @@ const subscriptionRoutes = require('./routes/subscriptionRoutes');
 const exportRoutes = require('./routes/exportRoutes');
 const razorpayRoutes = require('./routes/razorpayRoutes');
 
+const superAdminRoutes = require('./routes/superAdminRoutes');
+
 const app = express();
+// ... (omitted)
+app.use('/api/super-admin', superAdminRoutes);
+app.use('/api/auth', authRoutes);
 
 // CORS — allow requests from frontend (Vercel) or localhost in dev
 const allowedOrigins = [
@@ -59,20 +64,22 @@ const uploadDir = process.env.VERCEL
     : path.join(__dirname, '../uploads');
 app.use('/uploads', express.static(uploadDir));
 
+const { authenticate, requireAdmin } = require('./middleware/auth');
+
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/invoices', invoiceRoutes);
-app.use('/api/reports', reportRoutes);
+app.use('/api/reports', requireAdmin, reportRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/customers', customerRoutes);
-app.use('/api/suppliers', supplierRoutes);
-app.use('/api/expenses', expenseRoutes);
-app.use('/api/purchases', purchaseRoutes);
+app.use('/api/suppliers', requireAdmin, supplierRoutes);
+app.use('/api/expenses', requireAdmin, expenseRoutes);
+app.use('/api/purchases', requireAdmin, purchaseRoutes);
 app.use('/api/returns', returnRoutes);
 app.use('/api/stock-adjustments', stockAdjustmentRoutes);
-app.use('/api/discount-codes', discountCodeRoutes);
-app.use('/api/targets', salesTargetRoutes);
+app.use('/api/discount-codes', requireAdmin, discountCodeRoutes);
+app.use('/api/targets', requireAdmin, salesTargetRoutes);
 app.use('/api/due-payments', duePaymentRoutes);
 app.use('/api/subscription', subscriptionRoutes);
 app.use('/api/export', exportRoutes);

@@ -17,6 +17,18 @@ const ProtectedRoute = ({ children }) => {
         return <Navigate to="/login" />;
     }
 
+    // Staff Restrictions
+    const restrictedPaths = [
+        '/reports', '/suppliers', '/purchases',
+        '/expenses', '/end-of-day', '/discount-codes',
+        '/targets', '/staff'
+    ];
+    const currentPath = window.location.pathname;
+
+    if (user.role === 'staff' && restrictedPaths.includes(currentPath)) {
+        return <Navigate to="/dashboard" replace />;
+    }
+
     return children;
 };
 

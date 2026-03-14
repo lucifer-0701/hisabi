@@ -252,8 +252,8 @@ const PricingModal = ({ isOpen, onClose }) => {
                 <div className="px-8 pb-6 text-center">
                     <p className="text-xs text-slate-400 font-medium">
                         {isIndia
-                            ? 'All prices include 18% GST · Secure payments via Razorpay'
-                            : 'All plans include a 14-day free trial · Cancel anytime'
+                            ? 'Prices include a 2% platform fee · Secure payments via Razorpay'
+                            : 'Prices include a 2% platform fee · Cancel anytime'
                         }
                     </p>
                 </div>

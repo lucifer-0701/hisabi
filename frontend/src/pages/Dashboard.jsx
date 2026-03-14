@@ -47,11 +47,21 @@ const Dashboard = () => {
     const { t } = useTranslation();
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [targetData, setTargetData] = useState(null);
-    const [dashError, setDashError] = useState(null);
-    const currency = user?.shop?.currency || 'AED';
+    const [ads, setAds] = useState([]);
 
-    useEffect(() => { fetchAll(); }, []);
+    useEffect(() => {
+        fetchAll();
+        fetchAds();
+    }, []);
+
+    const fetchAds = async () => {
+        try {
+            const res = await api.get('/super-admin/public/ads');
+            setAds(res.data.filter(ad => ad.placement === 'dashboard_banner'));
+        } catch (err) {
+            console.error('Ad fetch error:', err);
+        }
+    };
 
     const fetchAll = async () => {
         setLoading(true);
@@ -68,10 +78,8 @@ const Dashboard = () => {
                     data: {
                         todayRevenue: 0,
                         totalInvoices: 0,
-                        lowStockCount: 0,
                         todayExpenses: 0,
                         totalProducts: 0,
-                        topProducts: []
                     }, isLocked: true
                 }));
             }
@@ -87,8 +95,6 @@ const Dashboard = () => {
             if (results[0].status === 'fulfilled') {
                 setStats(results[0].value.data);
             } else {
-                console.error('Full Stats Fetch Error:', results[0].reason);
-                // Don't show hard error for 403, just stay empty/locked
                 if (results[0].reason?.response?.status !== 403) {
                     setDashError(results[0].reason?.response?.data?.error || 'Failed to load dashboard stats');
                 }
@@ -98,7 +104,6 @@ const Dashboard = () => {
                 setTargetData(results[1].value.data);
             }
         } catch (err) {
-            console.error('Dashboard combined error:', err);
             setDashError('An unexpected error occurred while loading the dashboard.');
         } finally {
             setLoading(false);
@@ -120,14 +125,6 @@ const Dashboard = () => {
             icon: FileText,
             iconBg: 'bg-indigo-500',
             sub: t('dashboard.kpi.total_invoices_sub'),
-        },
-        {
-            label: t('dashboard.kpi.low_stock'),
-            value: stats.lowStockCount,
-            icon: AlertTriangle,
-            iconBg: stats.lowStockCount > 0 ? 'bg-red-500' : 'bg-emerald-500',
-            sub: stats.lowStockCount > 0 ? t('dashboard.kpi.low_stock_required') : t('dashboard.kpi.low_stock_healthy'),
-            subColor: stats.lowStockCount > 0 ? 'text-red-500' : 'text-emerald-600',
         },
         {
             label: t('dashboard.kpi.today_expenses'),
@@ -159,13 +156,6 @@ const Dashboard = () => {
             href: '/products',
             icon: Package,
             color: 'from-indigo-600 to-indigo-500',
-        },
-        {
-            label: t('dashboard.actions.analytics'),
-            desc: t('dashboard.actions.analytics_desc'),
-            href: '/reports',
-            icon: TrendingUp,
-            color: 'from-slate-800 to-slate-700',
         },
     ];
 
@@ -199,13 +189,31 @@ const Dashboard = () => {
                             className="inline-flex items-center gap-2 px-5 py-3 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-xl transition-colors shadow-lg shadow-blue-900/30 active:scale-95">
                             <ShoppingCart className="w-4 h-4" /> {t('dashboard.open_pos')}
                         </Link>
-                        <Link to="/reports"
-                            className="inline-flex items-center gap-2 px-5 py-3 bg-white/10 hover:bg-white/20 text-white text-sm font-bold rounded-xl transition-colors border border-white/10 active:scale-95">
-                            <BarChart2 className="w-4 h-4" /> {t('dashboard.reports')}
-                        </Link>
+                        {user?.role !== 'staff' && (
+                            <Link to="/reports"
+                                className="inline-flex items-center gap-2 px-5 py-3 bg-white/10 hover:bg-white/20 text-white text-sm font-bold rounded-xl transition-colors border border-white/10 active:scale-95">
+                                <BarChart2 className="w-4 h-4" /> {t('dashboard.reports')}
+                            </Link>
+                        )}
                     </div>
                 </div>
             </div>
+
+            {/* ── Ad Banner ── */}
+            {ads.length > 0 && (
+                <div className="w-full h-32 sm:h-40 rounded-2xl overflow-hidden border border-slate-100 shadow-sm relative group">
+                    <a href={ads[0].link_url || '#'} target={ads[0].link_url ? "_blank" : "_self"} rel="noopener noreferrer">
+                        <img src={ads[0].image_url} alt={ads[0].title} className="w-full h-full object-cover grayscale-[0.3] group-hover:grayscale-0 transition-all duration-700" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                        {ads[0].title && (
+                            <div className="absolute bottom-4 left-6">
+                                <p className="text-white font-black text-lg drop-shadow-md">{ads[0].title}</p>
+                            </div>
+                        )}
+                    </a>
+                </div>
+            )}
+
             {/* ── Error State ── */}
             {dashError && (
                 <div className="p-4 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-3 animate-shake">
@@ -218,130 +226,76 @@ const Dashboard = () => {
                 </div>
             )}
 
-            {/* ── Sales Target ── */}
-            {targetData?.currentMonth && (
-                <div className="bg-white rounded-2xl border border-slate-100 p-5">
-                    <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                            <Target className="w-4 h-4 text-blue-600" />
-                            <span className="text-xs font-black text-slate-500 uppercase tracking-wider">{t('dashboard.monthly_target')}</span>
-                        </div>
-                        <Link to="/targets" className="text-xs font-bold text-blue-600 hover:text-blue-700">{t('common.manage')} →</Link>
-                    </div>
-                    {targetData.currentMonth.target ? (
-                        <>
-                            <div className="flex justify-between text-sm font-black mb-2">
-                                <span className="text-slate-700">{currency} {Number(targetData.currentMonth.revenue).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                                <span className="text-slate-400">of {currency} {Number(targetData.currentMonth.target).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                            </div>
-                            <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                                <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-700"
-                                    style={{ width: `${Math.min(100, (targetData.currentMonth.revenue / targetData.currentMonth.target) * 100)}%` }} />
-                            </div>
-                            <p className="text-xs text-slate-400 mt-1.5">
-                                {Math.round((targetData.currentMonth.revenue / targetData.currentMonth.target) * 100)}% {t('dashboard.achieved_this_month')}
-                            </p>
-                        </>
-                    ) : (
-                        <Link to="/targets" className="text-xs text-slate-400 hover:text-blue-600 font-medium">{t('dashboard.set_target')} →</Link>
-                    )}
-                </div>
-            )}
-
             {/* ── KPI Cards ── */}
-            <div>
-                <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">{t('dashboard.live_overview')}</h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-                    {loading
-                        ? Array(5).fill(0).map((_, i) => <SkeletonCard key={i} />)
-                        : kpis.map((k, i) => <KpiCard key={i} {...k} />)
-                    }
-                </div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {loading
+                    ? Array(4).fill(0).map((_, i) => <SkeletonCard key={i} />)
+                    : kpis.map((k, i) => <KpiCard key={i} {...k} />)
+                }
             </div>
 
-            {/* ── Bottom Row ── */}
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Sales Target */}
+                <div className="lg:col-span-1">
+                    {targetData?.currentMonth && (
+                        <div className="bg-white rounded-2xl border border-slate-100 p-6 h-full flex flex-col justify-center">
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-2">
+                                    <Target className="w-4 h-4 text-blue-600" />
+                                    <span className="text-xs font-black text-slate-500 uppercase tracking-wider">{t('dashboard.monthly_target')}</span>
+                                </div>
+                                <Link to="/targets" className="text-xs font-bold text-blue-600 hover:text-blue-700">{t('common.manage')} →</Link>
+                            </div>
+                            {targetData.currentMonth.target ? (
+                                <>
+                                    <div className="flex justify-between text-lg font-black mb-3">
+                                        <span className="text-slate-700">{currency} {Number(targetData.currentMonth.revenue).toLocaleString()}</span>
+                                        <span className="text-slate-400 text-sm font-bold">/ {Number(targetData.currentMonth.target).toLocaleString()}</span>
+                                    </div>
+                                    <div className="h-3 bg-slate-100 rounded-full overflow-hidden mb-4">
+                                        <div className="h-full bg-gradient-to-r from-blue-500 via-indigo-500 to-blue-500 rounded-full transition-all duration-1000"
+                                            style={{ width: `${Math.min(100, (targetData.currentMonth.revenue / targetData.currentMonth.target) * 100)}%` }} />
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <p className="text-xs text-slate-500 font-bold">
+                                            {Math.round((targetData.currentMonth.revenue / targetData.currentMonth.target) * 100)}% {t('dashboard.achieved_this_month')}
+                                        </p>
+                                        <div className="px-2 py-1 bg-blue-50 text-blue-600 text-[10px] font-black rounded-lg uppercase tracking-tighter">Live Progress</div>
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="py-6 text-center">
+                                    <p className="text-slate-400 text-sm font-medium mb-4">No sales target set for this month</p>
+                                    <Link to="/targets" className="btn-primary inline-flex text-xs px-6 py-2.5">Set Target</Link>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+
                 {/* Quick Actions */}
-                <div className="lg:col-span-2 space-y-3">
-                    <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest">{t('dashboard.quick_actions')}</h2>
+                <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {quickActions.map((a) => {
                         const Icon = a.icon;
                         return (
                             <Link key={a.href} to={a.href}
-                                className="group flex items-center gap-4 p-4 bg-white rounded-2xl border border-slate-100 hover:border-blue-100 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
-                                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${a.color} flex items-center justify-center text-white shadow-sm flex-shrink-0 group-hover:scale-110 transition-transform`}>
-                                    <Icon className="w-5 h-5" />
+                                className="group flex flex-col justify-between p-6 bg-white rounded-3xl border border-slate-100 hover:border-blue-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                                <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${a.color} flex items-center justify-center text-white shadow-lg shadow-blue-500/10 mb-6 group-hover:scale-110 transition-transform`}>
+                                    <Icon className="w-6 h-6" />
                                 </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-bold text-slate-900">{a.label}</p>
-                                    <p className="text-xs text-slate-400">{a.desc}</p>
+                                <div>
+                                    <div className="flex items-center justify-between mb-1">
+                                        <p className="text-lg font-black text-slate-900">{a.label}</p>
+                                        <ArrowUpRight className="w-5 h-5 text-slate-300 group-hover:text-blue-500 transition-all" />
+                                    </div>
+                                    <p className="text-sm text-slate-400 font-medium">{a.desc}</p>
                                 </div>
-                                <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-blue-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
                             </Link>
                         );
                     })}
-                </div>
-
-                {/* Top Products */}
-                <div className="lg:col-span-3 bg-white rounded-2xl border border-slate-100 overflow-hidden">
-                    <div className="flex items-center justify-between px-6 py-4 border-b border-slate-50">
-                        <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-slate-900 rounded-xl flex items-center justify-center">
-                                <Award className="w-4 h-4 text-white" />
-                            </div>
-                            <div>
-                                <p className="text-sm font-black text-slate-900">{t('dashboard.top_selling')}</p>
-                                <p className="text-[10px] text-slate-400 font-medium">{t('dashboard.top_selling_sub')}</p>
-                            </div>
-                        </div>
-                        <Link to="/reports" className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1">
-                            {t('common.details')} <ArrowUpRight className="w-3 h-3" />
-                        </Link>
-                    </div>
-
-                    <div className="p-4">
-                        {loading ? (
-                            <div className="space-y-3">
-                                {Array(4).fill(0).map((_, i) => (
-                                    <div key={i} className="flex items-center gap-3 animate-pulse">
-                                        <div className="skeleton w-7 h-7 rounded-lg flex-shrink-0" />
-                                        <div className="flex-1 space-y-1.5">
-                                            <div className="skeleton h-3 w-3/4 rounded" />
-                                            <div className="skeleton h-2 w-1/4 rounded" />
-                                        </div>
-                                        <div className="skeleton h-4 w-16 rounded" />
-                                    </div>
-                                ))}
-                            </div>
-                        ) : !stats?.topProducts?.length ? (
-                            <div className="empty-state">
-                                <div className="empty-icon"><Medal className="w-5 h-5" /></div>
-                                <p className="empty-title">{t('dashboard.no_data')}</p>
-                                <p className="empty-sub">{t('dashboard.no_data_sub')}</p>
-                            </div>
-                        ) : (
-                            <div className="space-y-1">
-                                {stats.topProducts.map((p, i) => (
-                                    <div key={i} className="flex items-center gap-3 px-2 py-2.5 rounded-xl hover:bg-slate-50 transition-colors">
-                                        <div className="w-7 flex-shrink-0 flex justify-center">
-                                            <RankBadge rank={i + 1} />
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-bold text-slate-900 truncate">{p.name}</p>
-                                            <p className="text-[11px] text-slate-400">{p.quantity} {t('dashboard.units_sold')}</p>
-                                        </div>
-                                        <span className="text-sm font-black text-blue-600 flex-shrink-0">
-                                            {currency} {Number(p.revenue).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
                 </div>
             </div>
         </div>
     );
 };
-
 export default Dashboard;

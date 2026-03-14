@@ -135,17 +135,29 @@ const Sidebar = ({ location, onClose, isLocked, onUpgradeTrigger }) => {
                     <div key={section.group}>
                         <p className={`text-[9px] font-black text-slate-400 uppercase tracking-[0.12em] mb-1.5 px-3 ${isRTL ? 'text-right' : 'text-left'}`}>{t(section.group)}</p>
                         <div className="space-y-0.5">
-                            {section.items.map((item) => (
-                                <NavItem
-                                    key={item.href}
-                                    item={item}
-                                    isActive={location.pathname === item.href}
-                                    onClick={onClose}
-                                    isRTL={isRTL}
-                                    locked={isLocked(item.href)}
-                                    onLockClick={onUpgradeTrigger}
-                                />
-                            ))}
+                            {section.items.map((item) => {
+                                // Staff Restrictions
+                                const restrictedPaths = [
+                                    '/reports', '/suppliers', '/purchases',
+                                    '/expenses', '/end-of-day', '/discount-codes',
+                                    '/targets', '/staff'
+                                ];
+                                if (user?.role === 'staff' && restrictedPaths.includes(item.href)) {
+                                    return null;
+                                }
+
+                                return (
+                                    <NavItem
+                                        key={item.href}
+                                        item={item}
+                                        isActive={location.pathname === item.href}
+                                        onClick={onClose}
+                                        isRTL={isRTL}
+                                        locked={isLocked(item.href)}
+                                        onLockClick={onUpgradeTrigger}
+                                    />
+                                );
+                            })}
                         </div>
                     </div>
                 ))}
