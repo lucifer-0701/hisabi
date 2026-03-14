@@ -63,6 +63,11 @@ const Shop = sequelize.define('Shop', {
         type: DataTypes.STRING(7),
         allowNull: true,
         defaultValue: '#2563eb'
+    },
+    active: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: true,
+        allowNull: false
     }
 }, {
     tableName: 'shops',

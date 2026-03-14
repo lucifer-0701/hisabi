@@ -22,6 +22,19 @@ router.post('/login', superAdminController.login);
 // Protected Management Routes
 router.use(authenticateSuperAdmin);
 
+// Analytics & System Stats
+router.get('/analytics', superAdminController.getAnalytics);
+router.get('/logs', superAdminController.getActivityLogs);
+
+// Shop Management
+router.get('/shops', superAdminController.getAllShops);
+router.put('/shops/:id', superAdminController.updateShop);
+
+// Announcements
+router.get('/announcements', superAdminController.getAnnouncements);
+router.post('/announcements', superAdminController.createAnnouncement);
+router.delete('/announcements/:id', superAdminController.deleteAnnouncement);
+
 // Ads
 router.get('/ads', superAdminController.getAds);
 router.post('/ads', superAdminController.createAd);

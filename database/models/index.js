@@ -18,6 +18,8 @@ const SalesTarget = require('./SalesTarget');
 const DuePayment = require('./DuePayment');
 const SuperAdmin = require('./SuperAdmin');
 const Advertisement = require('./Advertisement');
+const Announcement = require('./Announcement');
+const ActivityLog = require('./ActivityLog');
 
 // ─── ALL ASSOCIATIONS (single source of truth) ────────────────────────
 // ... (lines omitted for brevity, but I will target specific insertion points)
@@ -130,5 +132,5 @@ module.exports = {
     Customer, Supplier, Expense,
     PurchaseOrder, PurchaseOrderItem,
     Return, StockAdjustment, DiscountCode, SalesTarget, DuePayment,
-    SuperAdmin, Advertisement
+    SuperAdmin, Advertisement, Announcement, ActivityLog
 };
