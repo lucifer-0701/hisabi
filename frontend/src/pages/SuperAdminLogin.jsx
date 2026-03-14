@@ -55,9 +55,10 @@ const SuperAdminLogin = () => {
 
                         <form onSubmit={handleLogin} className="space-y-4">
                             <div>
-                                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5 px-1">Login Identity</label>
+                                <label htmlFor="username" className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5 px-1">Login Identity</label>
                                 <div className="relative">
                                     <input
+                                        id="username"
                                         type="text"
                                         name="username"
                                         required
@@ -65,14 +66,16 @@ const SuperAdminLogin = () => {
                                         onChange={handleChange}
                                         className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
                                         placeholder="Username"
+                                        autoComplete="username"
                                     />
                                 </div>
                             </div>
 
                             <div>
-                                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5 px-1">Security Credentials</label>
+                                <label htmlFor="password" className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5 px-1">Security Credentials</label>
                                 <div className="relative">
                                     <input
+                                        id="password"
                                         type={showPassword ? "text" : "password"}
                                         name="password"
                                         required
@@ -80,6 +83,7 @@ const SuperAdminLogin = () => {
                                         onChange={handleChange}
                                         className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all pr-12"
                                         placeholder="Password"
+                                        autoComplete="current-password"
                                     />
                                     <button
                                         type="button"
@@ -92,9 +96,10 @@ const SuperAdminLogin = () => {
                             </div>
 
                             <div>
-                                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5 px-1">Authority Key</label>
+                                <label htmlFor="secret_key" className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5 px-1">Authority Key</label>
                                 <div className="relative">
                                     <input
+                                        id="secret_key"
                                         type={showSecret ? "text" : "password"}
                                         name="secret_key"
                                         required
@@ -102,6 +107,7 @@ const SuperAdminLogin = () => {
                                         onChange={handleChange}
                                         className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all pr-12"
                                         placeholder="Secret Authority Key"
+                                        autoComplete="off"
                                     />
                                     <button
                                         type="button"

@@ -152,10 +152,11 @@ const Login = () => {
                         <div className="space-y-4">
                             {!isLogin && (
                                 <div className="relative group">
-                                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1 mb-1.5 block">{t('login.shop_identity')}</label>
+                                    <label htmlFor="shop_name" className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1 mb-1.5 block">{t('login.shop_identity')}</label>
                                     <div className="relative">
                                         <Store className={`absolute ${isRTL ? 'right-4' : 'left-4'} top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-blue-500 transition-colors`} />
                                         <input
+                                            id="shop_name"
                                             name="shop_name"
                                             type="text"
                                             required
@@ -163,6 +164,7 @@ const Login = () => {
                                             onChange={handleChange}
                                             className={`w-full ${isRTL ? 'pr-12 pl-4 text-right' : 'pl-12 pr-4'} py-3.5 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-medium text-gray-900 placeholder:text-gray-400`}
                                             placeholder={t('login.shop_name')}
+                                            autoComplete="organization"
                                         />
                                     </div>
                                 </div>
@@ -170,10 +172,11 @@ const Login = () => {
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="relative group">
-                                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1 mb-1.5 block">{t('login.username_label')}</label>
+                                    <label htmlFor="username" className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1 mb-1.5 block">{t('login.username_label')}</label>
                                     <div className="relative">
                                         <User className={`absolute ${isRTL ? 'right-4' : 'left-4'} top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-blue-500 transition-colors`} />
                                         <input
+                                            id="username"
                                             name="username"
                                             type="text"
                                             required
@@ -181,14 +184,16 @@ const Login = () => {
                                             onChange={handleChange}
                                             className={`w-full ${isRTL ? 'pr-12 pl-4 text-right' : 'pl-12 pr-4'} py-3.5 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-medium text-gray-900 placeholder:text-gray-400`}
                                             placeholder={t('login.username')}
+                                            autoComplete="username"
                                         />
                                     </div>
                                 </div>
                                 <div className="relative group">
-                                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1 mb-1.5 block">{t('login.password_label')}</label>
+                                    <label htmlFor="password" className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1 mb-1.5 block">{t('login.password_label')}</label>
                                     <div className="relative">
                                         <Lock className={`absolute ${isRTL ? 'right-4' : 'left-4'} top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-blue-500 transition-colors`} />
                                         <input
+                                            id="password"
                                             name="password"
                                             type="password"
                                             required
@@ -196,6 +201,7 @@ const Login = () => {
                                             onChange={handleChange}
                                             className={`w-full ${isRTL ? 'pr-12 pl-4 text-right' : 'pl-12 pr-4'} py-3.5 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-medium text-gray-900 placeholder:text-gray-400`}
                                             placeholder="••••••••"
+                                            autoComplete={isLogin ? "current-password" : "new-password"}
                                         />
                                     </div>
                                 </div>
@@ -206,48 +212,54 @@ const Login = () => {
                         {!isLogin && (
                             <div className="space-y-4 pt-4 border-t border-gray-100 animate-in fade-in slide-in-from-top-4 duration-500">
                                 <div className="relative group">
-                                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1 mb-1.5 block">{t('login.address_label')}</label>
+                                    <label htmlFor="address" className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1 mb-1.5 block">{t('login.address_label')}</label>
                                     <div className="relative">
                                         <MapPin className={`absolute ${isRTL ? 'right-4' : 'left-4'} top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-blue-500 transition-colors`} />
                                         <input
+                                            id="address"
                                             name="address"
                                             type="text"
                                             value={formData.address}
                                             onChange={handleChange}
                                             className={`w-full ${isRTL ? 'pr-12 pl-4 text-right' : 'pl-12 pr-4'} py-3.5 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-medium text-gray-900 placeholder:text-gray-400`}
                                             placeholder={t('login.address_placeholder')}
+                                            autoComplete="street-address"
                                         />
                                     </div>
                                 </div>
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div className="relative group">
-                                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1 mb-1.5 block">{t('login.phone_label')}</label>
+                                        <label htmlFor="phone" className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1 mb-1.5 block">{t('login.phone_label')}</label>
                                         <div className="relative">
                                             <div className={`absolute ${isRTL ? 'right-4' : 'left-4'} top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 flex items-center justify-center`}>
                                                 <Hash className="w-5 h-5 group-focus-within:text-blue-500 transition-colors" />
                                             </div>
                                             <input
+                                                id="phone"
                                                 name="phone"
                                                 type="text"
                                                 value={formData.phone}
                                                 onChange={handleChange}
                                                 className={`w-full ${isRTL ? 'pr-12 pl-4 text-right' : 'pl-12 pr-4'} py-3.5 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-medium text-gray-900 placeholder:text-gray-400`}
                                                 placeholder="+971 50..."
+                                                autoComplete="tel"
                                             />
                                         </div>
                                     </div>
                                     <div className="relative group">
-                                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1 mb-1.5 block">{t('login.email_label')}</label>
+                                        <label htmlFor="email" className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1 mb-1.5 block">{t('login.email_label')}</label>
                                         <div className="relative">
                                             <User className={`absolute ${isRTL ? 'right-4' : 'left-4'} top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-blue-500 transition-colors`} />
                                             <input
+                                                id="email"
                                                 name="email"
                                                 type="email"
                                                 value={formData.email}
                                                 onChange={handleChange}
                                                 className={`w-full ${isRTL ? 'pr-12 pl-4 text-right' : 'pl-12 pr-4'} py-3.5 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-medium text-gray-900 placeholder:text-gray-400`}
                                                 placeholder="store@example.com"
+                                                autoComplete="email"
                                             />
                                         </div>
                                     </div>
