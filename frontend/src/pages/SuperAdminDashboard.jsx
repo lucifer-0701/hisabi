@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-    Shield, megaphone as AnnouncementIcon, Ticket, LogOut, Plus, Trash2, Edit2,
+    Shield, Megaphone as AnnouncementIcon, Ticket, LogOut, Plus, Trash2, Edit2,
     CheckCircle2, XCircle, Layout, Chrome, BarChart2, DollarSign,
     Save, X, Image as ImageIcon, Link as LinkIcon, Calendar,
     Users, Activity, Store, AlertCircle, Info
