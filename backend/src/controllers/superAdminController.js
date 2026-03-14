@@ -1,5 +1,5 @@
-const { SuperAdmin, Advertisement, DiscountCode } = require('../../../database/models');
-const { comparePassword } = require('../utils/hash');
+const { SuperAdmin, Advertisement, DiscountCode, sequelize } = require('../../../database/models');
+const { hashPassword, comparePassword } = require('../utils/hash');
 const { generateToken } = require('../utils/token');
 
 const login = async (req, res) => {
