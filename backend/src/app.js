@@ -28,7 +28,13 @@ const razorpayRoutes = require('./routes/razorpayRoutes');
 const superAdminRoutes = require('./routes/superAdminRoutes');
 
 const app = express();
-// ... (omitted)
+
+// Log origins to help debug CORS
+app.use((req, res, next) => {
+    console.log(`[Request] ${req.method} ${req.path} | Origin: ${req.get('origin') || 'no-origin'}`);
+    next();
+});
+
 // CORS — allow requests from frontend (Vercel) or localhost in dev
 const allowedOrigins = [
     process.env.FRONTEND_URL,

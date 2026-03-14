@@ -5,15 +5,32 @@ const { generateToken } = require('../utils/token');
 const login = async (req, res) => {
     try {
         const { username, password, secret_key } = req.body;
+        console.log(`[SuperAdminLogin] Attempt for username: "${username}"`);
 
-        const admin = await SuperAdmin.findOne({ where: { username } });
-        if (!admin) return res.status(401).json({ error: 'Invalid credentials' });
+        const admin = await SuperAdmin.findOne({
+            where: sequelize.where(
+                sequelize.fn('LOWER', sequelize.col('username')),
+                sequelize.fn('LOWER', username)
+            )
+        });
+
+        if (!admin) {
+            console.warn(`[SuperAdminLogin] Admin NOT FOUND for: "${username}"`);
+            return res.status(401).json({ error: 'Identity not recognized' });
+        }
 
         const isPasswordMatch = await comparePassword(password, admin.password_hash);
-        const isSecretKeyMatch = await comparePassword(secret_key, admin.secret_key_hash);
+        console.log(`[SuperAdminLogin] Password match: ${isPasswordMatch}`);
 
-        if (!isPasswordMatch || !isSecretKeyMatch) {
-            return res.status(401).json({ error: 'Invalid credentials' });
+        const isSecretKeyMatch = await comparePassword(secret_key, admin.secret_key_hash);
+        console.log(`[SuperAdminLogin] Secret key match: ${isSecretKeyMatch}`);
+
+        if (!isPasswordMatch) {
+            return res.status(401).json({ error: 'Invalid security credentials' });
+        }
+
+        if (!isSecretKeyMatch) {
+            return res.status(401).json({ error: 'Invalid authority key' });
         }
 
         const token = generateToken({ id: admin.id, role: 'super-admin' });

@@ -25,7 +25,7 @@ const SuperAdminLogin = () => {
         setError('');
         try {
             const response = await api.post('/super-admin/login', credentials);
-            localStorage.setItem('superAdminToken', response.data.token);
+            localStorage.setItem('token', response.data.token);
             navigate('/super-admin-dashboard');
         } catch (err) {
             setError(err.response?.data?.error || 'Login failed. Security breach logged.');
