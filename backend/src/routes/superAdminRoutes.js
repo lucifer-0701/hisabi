@@ -14,7 +14,9 @@ router.get('/public/ads', async (req, res) => {
     }
 });
 
-// Private
+// Public Setup & Auth
+router.get('/setup-status', superAdminController.checkSetupStatus);
+router.post('/initialize', superAdminController.initializeSuperAdmin);
 router.post('/login', superAdminController.login);
 
 // Protected Management Routes
