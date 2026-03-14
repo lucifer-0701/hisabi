@@ -256,7 +256,45 @@ const Dashboard = () => {
                 </div>
             )}
 
-            {/* ── KPI Cards ── */}
+            {/* ── Sales Target (Full Width) ── */}
+            {targetData?.currentMonth && (
+                <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                            <Target className="w-4 h-4 text-blue-600" />
+                            <span className="text-xs font-black text-slate-500 uppercase tracking-wider">{t('dashboard.monthly_target')}</span>
+                        </div>
+                        <Link to="/targets" className="text-xs font-bold text-blue-600 hover:text-blue-700">{t('common.manage')} →</Link>
+                    </div>
+                    {targetData.currentMonth.target ? (
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-center">
+                            <div className="md:col-span-1">
+                                <p className="text-2xl font-black text-slate-700">{currency} {Number(targetData.currentMonth.revenue).toLocaleString()}</p>
+                                <p className="text-xs text-slate-400 font-bold">of {Number(targetData.currentMonth.target).toLocaleString()} target</p>
+                            </div>
+                            <div className="md:col-span-2">
+                                <div className="h-3 bg-slate-100 rounded-full overflow-hidden mb-2">
+                                    <div className="h-full bg-gradient-to-r from-blue-500 via-indigo-500 to-blue-500 rounded-full transition-all duration-1000"
+                                        style={{ width: `${Math.min(100, (targetData.currentMonth.revenue / targetData.currentMonth.target) * 100)}%` }} />
+                                </div>
+                                <p className="text-xs text-slate-500 font-bold">
+                                    {Math.round((targetData.currentMonth.revenue / targetData.currentMonth.target) * 100)}% {t('dashboard.achieved_this_month')}
+                                </p>
+                            </div>
+                            <div className="md:col-span-1 flex justify-end">
+                                <div className="px-3 py-1.5 bg-blue-50 text-blue-600 text-[10px] font-black rounded-lg uppercase tracking-wider border border-blue-100">Live Progress</div>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="py-2 flex items-center justify-between">
+                            <p className="text-slate-400 text-sm font-medium">No sales target set for this month</p>
+                            <Link to="/targets" className="btn-primary py-2 px-6 text-xs">Set Target</Link>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* ── KPI Cards (5 Columns) ── */}
             <div className={`grid grid-cols-2 sm:grid-cols-3 ${kpis.length >= 5 ? 'lg:grid-cols-5' : kpis.length === 4 ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-4`}>
                 {loading
                     ? Array(kpis.length || 4).fill(0).map((_, i) => <SkeletonCard key={i} />)
@@ -264,139 +302,94 @@ const Dashboard = () => {
                 }
             </div>
 
-            <div className={`grid grid-cols-1 ${!isLocked('/reports') && targetData?.currentMonth ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-6`}>
-                {/* ── Sales Target ── */}
-                {targetData?.currentMonth && (
-                    <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm">
-                        <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-2">
-                                <Target className="w-4 h-4 text-blue-600" />
-                                <span className="text-xs font-black text-slate-500 uppercase tracking-wider">{t('dashboard.monthly_target')}</span>
-                            </div>
-                            <Link to="/targets" className="text-xs font-bold text-blue-600 hover:text-blue-700">{t('common.manage')} →</Link>
-                        </div>
-                        {targetData.currentMonth.target ? (
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-center">
-                                <div className="md:col-span-1">
-                                    <p className="text-2xl font-black text-slate-700">{currency} {Number(targetData.currentMonth.revenue).toLocaleString()}</p>
-                                    <p className="text-xs text-slate-400 font-bold">of {Number(targetData.currentMonth.target).toLocaleString()} target</p>
+            {/* ── Bottom Section (Quick Actions & Top Products) ── */}
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+                {/* Left: Quick Actions (3 Columns in wireframe, here 3 columns within the 5-column span) */}
+                <div className="lg:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-4 h-fit">
+                    {quickActions.map((a) => {
+                        const Icon = a.icon;
+                        return (
+                            <Link key={a.href} to={a.href}
+                                className="group flex flex-col justify-between p-6 bg-white rounded-3xl border border-slate-100 hover:border-blue-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                                <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${a.color} flex items-center justify-center text-white shadow-lg shadow-blue-500/10 mb-6 group-hover:scale-110 transition-transform`}>
+                                    <Icon className="w-6 h-6" />
                                 </div>
-                                <div className="md:col-span-2">
-                                    <div className="h-3 bg-slate-100 rounded-full overflow-hidden mb-2">
-                                        <div className="h-full bg-gradient-to-r from-blue-500 via-indigo-500 to-blue-500 rounded-full transition-all duration-1000"
-                                            style={{ width: `${Math.min(100, (targetData.currentMonth.revenue / targetData.currentMonth.target) * 100)}%` }} />
+                                <div>
+                                    <div className="flex items-center justify-between mb-1">
+                                        <p className="text-base font-black text-slate-900 leading-tight">{a.label}</p>
+                                        <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-blue-500 transition-all" />
                                     </div>
-                                    <p className="text-xs text-slate-500 font-bold">
-                                        {Math.round((targetData.currentMonth.revenue / targetData.currentMonth.target) * 100)}% {t('dashboard.achieved_this_month')}
-                                    </p>
+                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">{a.desc.split(' ')[0]}</p>
                                 </div>
-                                <div className="md:col-span-1 flex justify-end">
-                                    <div className="px-3 py-1.5 bg-blue-50 text-blue-600 text-[10px] font-black rounded-lg uppercase tracking-wider border border-blue-100">Live Progress</div>
+                            </Link>
+                        );
+                    })}
+                </div>
+
+                {/* Right: Top Selling Products (2 Columns span) */}
+                {!isLocked('/reports') && (
+                    <div className="lg:col-span-2">
+                        <div className="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm h-full flex flex-col">
+                            <div className="flex items-center justify-between px-6 py-5 border-b border-slate-50 bg-slate-50/30">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 bg-slate-900 rounded-xl flex items-center justify-center">
+                                        <Award className="w-4 h-4 text-white" />
+                                    </div>
+                                    <p className="text-sm font-black text-slate-900">{t('dashboard.top_selling')}</p>
                                 </div>
+                                <Link to="/reports" className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1">
+                                    {t('common.details')} <ArrowUpRight className="w-3 h-3" />
+                                </Link>
                             </div>
-                        ) : (
-                            <div className="py-2 flex items-center justify-between">
-                                <p className="text-slate-400 text-sm font-medium">No sales target set for this month</p>
-                                <Link to="/targets" className="btn-primary py-2 px-6 text-xs">Set Target</Link>
+
+                            <div className="p-6 flex-1">
+                                {loading ? (
+                                    <div className="space-y-4">
+                                        {Array(4).fill(0).map((_, i) => (
+                                            <div key={i} className="flex items-center gap-4 animate-pulse">
+                                                <div className="skeleton w-8 h-8 rounded-lg flex-shrink-0" />
+                                                <div className="flex-1 space-y-2">
+                                                    <div className="skeleton h-4 w-3/4 rounded" />
+                                                    <div className="skeleton h-3 w-1/4 rounded" />
+                                                </div>
+                                                <div className="skeleton h-5 w-20 rounded" />
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : !stats?.topProducts?.length ? (
+                                    <div className="h-full flex flex-col items-center justify-center py-8">
+                                        <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+                                            <Medal className="w-6 h-6 text-slate-300" />
+                                        </div>
+                                        <p className="text-sm font-bold text-slate-400">{t('dashboard.no_data')}</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2">
+                                        {stats.topProducts.slice(0, 5).map((p, i) => (
+                                            <div key={i} className="flex items-center gap-4 px-3 py-3 rounded-2xl hover:bg-slate-50 transition-colors">
+                                                <div className="w-8 flex-shrink-0 flex justify-center">
+                                                    <RankBadge rank={i + 1} />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-bold text-slate-900 truncate">{p.name}</p>
+                                                    <p className="text-[10px] text-slate-400 font-medium">{p.quantity} {t('dashboard.units_sold')}</p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <span className="text-xs font-black text-blue-600">
+                                                        {currency} {Number(p.revenue).toLocaleString()}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
-                        )}
+                        </div>
                     </div>
                 )}
-
-                {/* ── Main Content Grid ── */}
-                <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-                    {/* Left Column: Quick Actions */}
-                    <div className="lg:col-span-2 space-y-4">
-                        <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest">{t('dashboard.quick_actions')}</h2>
-                        <div className="grid grid-cols-1 gap-4">
-                            {quickActions.map((a) => {
-                                const Icon = a.icon;
-                                return (
-                                    <Link key={a.href} to={a.href}
-                                        className="group flex items-center gap-4 p-5 bg-white rounded-3xl border border-slate-100 hover:border-blue-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                                        <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${a.color} flex items-center justify-center text-white shadow-lg shadow-blue-500/10 flex-shrink-0 group-hover:scale-110 transition-transform`}>
-                                            <Icon className="w-6 h-6" />
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center justify-between mb-1">
-                                                <p className="text-lg font-black text-slate-900">{a.label}</p>
-                                                <ArrowUpRight className="w-5 h-5 text-slate-300 group-hover:text-blue-500 transition-all" />
-                                            </div>
-                                            <p className="text-sm text-slate-400 font-medium">{a.desc}</p>
-                                        </div>
-                                    </Link>
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    {/* Right Column: Top Products (Gold/Premium Only) */}
-                    {!isLocked('/reports') && (
-                        <div className="lg:col-span-3 space-y-4">
-                            <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest">{t('dashboard.top_selling')}</h2>
-                            <div className="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm">
-                                <div className="flex items-center justify-between px-6 py-5 border-b border-slate-50 bg-slate-50/30">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 bg-slate-900 rounded-xl flex items-center justify-center">
-                                            <Award className="w-4 h-4 text-white" />
-                                        </div>
-                                        <p className="text-sm font-black text-slate-900">{t('dashboard.top_selling')}</p>
-                                    </div>
-                                    <Link to="/reports" className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1">
-                                        {t('common.details')} <ArrowUpRight className="w-3 h-3" />
-                                    </Link>
-                                </div>
-
-                                <div className="p-6">
-                                    {loading ? (
-                                        <div className="space-y-4">
-                                            {Array(4).fill(0).map((_, i) => (
-                                                <div key={i} className="flex items-center gap-4 animate-pulse">
-                                                    <div className="skeleton w-8 h-8 rounded-lg flex-shrink-0" />
-                                                    <div className="flex-1 space-y-2">
-                                                        <div className="skeleton h-4 w-3/4 rounded" />
-                                                        <div className="skeleton h-3 w-1/4 rounded" />
-                                                    </div>
-                                                    <div className="skeleton h-5 w-20 rounded" />
-                                                </div>
-                                            ))}
-                                        </div>
-                                    ) : !stats?.topProducts?.length ? (
-                                        <div className="py-12 text-center">
-                                            <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                                                <Medal className="w-6 h-6 text-slate-300" />
-                                            </div>
-                                            <p className="text-sm font-bold text-slate-400">{t('dashboard.no_data')}</p>
-                                            <p className="text-xs text-slate-400 mt-1">{t('dashboard.no_data_sub')}</p>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-2">
-                                            {stats.topProducts.slice(0, 5).map((p, i) => (
-                                                <div key={i} className="flex items-center gap-4 px-3 py-3 rounded-2xl hover:bg-slate-50 transition-colors">
-                                                    <div className="w-8 flex-shrink-0 flex justify-center">
-                                                        <RankBadge rank={i + 1} />
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="text-base font-bold text-slate-900 truncate">{p.name}</p>
-                                                        <p className="text-xs text-slate-400 font-medium">{p.quantity} {t('dashboard.units_sold')}</p>
-                                                    </div>
-                                                    <div className="text-right">
-                                                        <span className="text-sm font-black text-blue-600">
-                                                            {currency} {Number(p.revenue).toLocaleString(undefined, { minimumFractionDigits: 1 })}
-                                                        </span>
-                                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">Revenue</p>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                </div>
             </div>
         </div>
     );
 };
+
 export default Dashboard;
