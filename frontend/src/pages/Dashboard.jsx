@@ -19,16 +19,29 @@ const SkeletonCard = () => (
     </div>
 );
 
-const KpiCard = memo(({ label, value, icon: Icon, iconBg, sub, subColor = 'text-slate-400' }) => (
-    <div className="kpi-card group">
-        <div className={`kpi-icon ${iconBg} group-hover:scale-110 transition-transform`}>
-            <Icon className="w-5 h-5" />
+const KpiCard = memo(({ label, value, icon: Icon, iconBg, sub, subColor = 'text-slate-400', isAction, href }) => {
+    const Content = (
+        <div className="kpi-card group h-full">
+            <div className={`kpi-icon ${iconBg} group-hover:scale-110 transition-transform`}>
+                <Icon className="w-5 h-5" />
+            </div>
+            <p className="kpi-label">{label}</p>
+            <p className="kpi-value text-xl">{value}</p>
+            {!isAction && <p className={`kpi-sub ${subColor}`}>{sub}</p>}
+            {isAction && (
+                <div className="mt-2 flex items-center text-[10px] font-black text-blue-600 uppercase tracking-widest">
+                    Quick Access <ChevronRight className="w-3 h-3 ml-1" />
+                </div>
+            )}
         </div>
-        <p className="kpi-label">{label}</p>
-        <p className="kpi-value">{value}</p>
-        <p className={`kpi-sub ${subColor}`}>{sub}</p>
-    </div>
-));
+    );
+
+    if (isAction && href) {
+        return <Link to={href} className="block h-full group">{Content}</Link>;
+    }
+
+    return Content;
+});
 
 const RankBadge = ({ rank }) => {
     if (rank === 1) return <span className="text-lg">🥇</span>;
@@ -159,11 +172,40 @@ const Dashboard = () => {
         },
     ] : [];
 
-    const kpis = allKpis.filter(k => {
-        if (user?.role === 'staff' && k.id === 'today_expenses') return false;
-        if (k.planLimit && isLocked(k.planLimit)) return false;
-        return true;
-    });
+    const kpis = allKpis.reduce((acc, k) => {
+        // Staff see Action Cards instead of Low Stock and Expenses
+        if (user?.role === 'staff') {
+            if (k.id === 'low_stock') {
+                acc.push({
+                    id: 'staff_start_selling',
+                    label: t('dashboard.actions.start_selling'),
+                    value: 'Go to POS',
+                    icon: ShoppingCart,
+                    iconBg: 'bg-blue-600',
+                    isAction: true,
+                    href: '/pos'
+                });
+                return acc;
+            }
+            if (k.id === 'today_expenses') {
+                acc.push({
+                    id: 'staff_inventory',
+                    label: t('dashboard.actions.inventory'),
+                    value: 'Manage Stock',
+                    icon: Package,
+                    iconBg: 'bg-indigo-600',
+                    isAction: true,
+                    href: '/products'
+                });
+                return acc;
+            }
+            // Staff don't see Low Stock or Expenses, only the above replacements
+        }
+
+        if (k.planLimit && isLocked(k.planLimit)) return acc;
+        acc.push(k);
+        return acc;
+    }, []);
 
     const quickActions = [
         {
@@ -256,8 +298,8 @@ const Dashboard = () => {
                 </div>
             )}
 
-            {/* ── Sales Target (Full Width) ── */}
-            {targetData?.currentMonth && (
+            {/* ── Sales Target (Full Width) (Admin Only) ── */}
+            {user?.role !== 'staff' && targetData?.currentMonth && (
                 <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm">
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
@@ -302,92 +344,94 @@ const Dashboard = () => {
                 }
             </div>
 
-            {/* ── Bottom Section (Quick Actions & Top Products) ── */}
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-                {/* Left: Quick Actions (3 Columns in wireframe, here 3 columns within the 5-column span) */}
-                <div className="lg:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-4 h-fit">
-                    {quickActions.map((a) => {
-                        const Icon = a.icon;
-                        return (
-                            <Link key={a.href} to={a.href}
-                                className="group flex flex-col justify-between p-6 bg-white rounded-3xl border border-slate-100 hover:border-blue-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                                <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${a.color} flex items-center justify-center text-white shadow-lg shadow-blue-500/10 mb-6 group-hover:scale-110 transition-transform`}>
-                                    <Icon className="w-6 h-6" />
-                                </div>
-                                <div>
-                                    <div className="flex items-center justify-between mb-1">
-                                        <p className="text-base font-black text-slate-900 leading-tight">{a.label}</p>
-                                        <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-blue-500 transition-all" />
+            {/* ── Bottom Section (Quick Actions & Top Products) (Admin Only) ── */}
+            {user?.role !== 'staff' && (
+                <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+                    {/* Left: Quick Actions (3 Columns in wireframe, here 3 columns within the 5-column span) */}
+                    <div className="lg:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-4 h-fit">
+                        {quickActions.map((a) => {
+                            const Icon = a.icon;
+                            return (
+                                <Link key={a.href} to={a.href}
+                                    className="group flex flex-col justify-between p-6 bg-white rounded-3xl border border-slate-100 hover:border-blue-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                                    <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${a.color} flex items-center justify-center text-white shadow-lg shadow-blue-500/10 mb-6 group-hover:scale-110 transition-transform`}>
+                                        <Icon className="w-6 h-6" />
                                     </div>
-                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">{a.desc.split(' ')[0]}</p>
-                                </div>
-                            </Link>
-                        );
-                    })}
-                </div>
-
-                {/* Right: Top Selling Products (2 Columns span) */}
-                {!isLocked('/reports') && (
-                    <div className="lg:col-span-2">
-                        <div className="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm h-full flex flex-col">
-                            <div className="flex items-center justify-between px-6 py-5 border-b border-slate-50 bg-slate-50/30">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 bg-slate-900 rounded-xl flex items-center justify-center">
-                                        <Award className="w-4 h-4 text-white" />
-                                    </div>
-                                    <p className="text-sm font-black text-slate-900">{t('dashboard.top_selling')}</p>
-                                </div>
-                                <Link to="/reports" className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1">
-                                    {t('common.details')} <ArrowUpRight className="w-3 h-3" />
-                                </Link>
-                            </div>
-
-                            <div className="p-6 flex-1">
-                                {loading ? (
-                                    <div className="space-y-4">
-                                        {Array(4).fill(0).map((_, i) => (
-                                            <div key={i} className="flex items-center gap-4 animate-pulse">
-                                                <div className="skeleton w-8 h-8 rounded-lg flex-shrink-0" />
-                                                <div className="flex-1 space-y-2">
-                                                    <div className="skeleton h-4 w-3/4 rounded" />
-                                                    <div className="skeleton h-3 w-1/4 rounded" />
-                                                </div>
-                                                <div className="skeleton h-5 w-20 rounded" />
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : !stats?.topProducts?.length ? (
-                                    <div className="h-full flex flex-col items-center justify-center py-8">
-                                        <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mb-4">
-                                            <Medal className="w-6 h-6 text-slate-300" />
+                                    <div>
+                                        <div className="flex items-center justify-between mb-1">
+                                            <p className="text-base font-black text-slate-900 leading-tight">{a.label}</p>
+                                            <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-blue-500 transition-all" />
                                         </div>
-                                        <p className="text-sm font-bold text-slate-400">{t('dashboard.no_data')}</p>
+                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">{a.desc.split(' ')[0]}</p>
                                     </div>
-                                ) : (
-                                    <div className="space-y-2">
-                                        {stats.topProducts.slice(0, 5).map((p, i) => (
-                                            <div key={i} className="flex items-center gap-4 px-3 py-3 rounded-2xl hover:bg-slate-50 transition-colors">
-                                                <div className="w-8 flex-shrink-0 flex justify-center">
-                                                    <RankBadge rank={i + 1} />
+                                </Link>
+                            );
+                        })}
+                    </div>
+
+                    {/* Right: Top Selling Products (2 Columns span) */}
+                    {!isLocked('/reports') && (
+                        <div className="lg:col-span-2">
+                            <div className="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm h-full flex flex-col">
+                                <div className="flex items-center justify-between px-6 py-5 border-b border-slate-50 bg-slate-50/30">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 bg-slate-900 rounded-xl flex items-center justify-center">
+                                            <Award className="w-4 h-4 text-white" />
+                                        </div>
+                                        <p className="text-sm font-black text-slate-900">{t('dashboard.top_selling')}</p>
+                                    </div>
+                                    <Link to="/reports" className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1">
+                                        {t('common.details')} <ArrowUpRight className="w-3 h-3" />
+                                    </Link>
+                                </div>
+
+                                <div className="p-6 flex-1">
+                                    {loading ? (
+                                        <div className="space-y-4">
+                                            {Array(4).fill(0).map((_, i) => (
+                                                <div key={i} className="flex items-center gap-4 animate-pulse">
+                                                    <div className="skeleton w-8 h-8 rounded-lg flex-shrink-0" />
+                                                    <div className="flex-1 space-y-2">
+                                                        <div className="skeleton h-4 w-3/4 rounded" />
+                                                        <div className="skeleton h-3 w-1/4 rounded" />
+                                                    </div>
+                                                    <div className="skeleton h-5 w-20 rounded" />
                                                 </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="text-sm font-bold text-slate-900 truncate">{p.name}</p>
-                                                    <p className="text-[10px] text-slate-400 font-medium">{p.quantity} {t('dashboard.units_sold')}</p>
-                                                </div>
-                                                <div className="text-right">
-                                                    <span className="text-xs font-black text-blue-600">
-                                                        {currency} {Number(p.revenue).toLocaleString()}
-                                                    </span>
-                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : !stats?.topProducts?.length ? (
+                                        <div className="h-full flex flex-col items-center justify-center py-8">
+                                            <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+                                                <Medal className="w-6 h-6 text-slate-300" />
                                             </div>
-                                        ))}
-                                    </div>
-                                )}
+                                            <p className="text-sm font-bold text-slate-400">{t('dashboard.no_data')}</p>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-2">
+                                            {stats.topProducts.slice(0, 5).map((p, i) => (
+                                                <div key={i} className="flex items-center gap-4 px-3 py-3 rounded-2xl hover:bg-slate-50 transition-colors">
+                                                    <div className="w-8 flex-shrink-0 flex justify-center">
+                                                        <RankBadge rank={i + 1} />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-sm font-bold text-slate-900 truncate">{p.name}</p>
+                                                        <p className="text-[10px] text-slate-400 font-medium">{p.quantity} {t('dashboard.units_sold')}</p>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <span className="text-xs font-black text-blue-600">
+                                                            {currency} {Number(p.revenue).toLocaleString()}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                )}
-            </div>
+                    )}
+                </div>
+            )}
         </div>
     );
 };
