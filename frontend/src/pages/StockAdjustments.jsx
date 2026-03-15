@@ -164,11 +164,9 @@ const StockAdjustments = () => {
                         <p className="page-subtitle">{adjustments.length} {trans('stock_adj.adjustments')} · {lowStock.length} {trans('stock_adj.low_stock_alerts')}</p>
                     </div>
                 </div>
-                {isAdmin && (
-                    <button onClick={() => setShowModal(true)} className="btn-primary">
-                        <Plus className="w-4 h-4" /> {trans('stock_adj.adjust_stock')}
-                    </button>
-                )}
+                <button onClick={() => setShowModal(true)} className="btn-primary">
+                    <Plus className="w-4 h-4" /> {trans('stock_adj.adjust_stock')}
+                </button>
             </div>
 
             {/* Low stock alert banner */}
