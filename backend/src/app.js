@@ -75,7 +75,7 @@ app.use('/api/super-admin', superAdminRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/invoices', invoiceRoutes);
-app.use('/api/reports', authenticate, requireAdmin, reportRoutes);
+app.use('/api/reports', reportRoutes); // Role checks moved inside reportRoutes
 app.use('/api/categories', categoryRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/suppliers', authenticate, requireAdmin, supplierRoutes);
