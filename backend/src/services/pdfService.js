@@ -256,8 +256,8 @@ const generateInvoicePDF = (invoice, shop) => {
             doc.text(`${currency} ${parseFloat(invoice.due_amount).toFixed(2)}`, totalsX + 10, totY + 30, { width: 230, align: 'right' });
         }
 
-        // ── Footer: stamp on page 0 to prevent ghost blank pages ─────────────
-        doc.flushPages();
+        // ── Footer: stamp on page 0 using bufferPages ─────────────────────────
+        // With bufferPages:true, switchToPage is safe before doc.end()
         doc.switchToPage(0);
 
         const footerY = doc.page.height - 58;
