@@ -242,9 +242,10 @@ const UserDropdown = ({ user, handleLogout, isRTL, t, onUpgrade, plan }) => {
                                     onClick={() => setView('language')}
                                     className={`w-full flex items-center gap-3 px-3 py-2.5 text-xs font-black text-slate-600 hover:text-blue-600 hover:bg-blue-50/50 rounded-xl transition-all ${isRTL ? 'flex-row-reverse text-right' : ''}`}
                                 >
-                                    <Globe className="w-4 h-4 opacity-70" />
-                                    <span className="flex-1 text-inherit">{i18n.language === 'en' ? t('common.english') : t('common.arabic')}</span>
-                                    <ChevronRight className={`w-3.5 h-3.5 opacity-40 ${isRTL ? 'rotate-180' : ''}`} />
+                                    <Globe className="w-4 h-4 opacity-70 shrink-0" />
+                                    <span className="text-inherit">{i18n.language === 'en' ? t('common.english') : t('common.arabic')}</span>
+                                    <div className="flex-1" />
+                                    <ChevronRight className={`w-3.5 h-3.5 opacity-40 shrink-0 ${isRTL ? 'rotate-180' : ''}`} />
                                 </button>
 
                                 <div className="h-px bg-slate-50 my-1 mx-2" />
