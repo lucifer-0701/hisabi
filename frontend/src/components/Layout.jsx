@@ -262,14 +262,14 @@ const UserDropdown = ({ user, handleLogout, isRTL, t, onUpgrade, plan }) => {
                             </>
                         ) : (
                             <>
-                                <div className="relative px-2 py-3 border-b border-slate-50 mb-2 flex items-center justify-center">
+                                <div className={`relative px-4 py-3 border-b border-slate-50 mb-1 ${isRTL ? 'text-right' : 'text-left'}`}>
+                                    <p className="text-xs font-black text-slate-900">{t('common.language')}</p>
                                     <button 
                                         onClick={() => setView('main')} 
-                                        className={`absolute top-1/2 -translate-y-1/2 ${isRTL ? 'right-2' : 'left-2'} p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 transition-colors`}
+                                        className={`absolute top-1/2 -translate-y-1/2 ${isRTL ? 'left-4' : 'right-4'} p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 transition-colors`}
                                     >
                                         <ChevronRight className={`w-4 h-4 ${isRTL ? '' : 'rotate-180'}`} />
                                     </button>
-                                    <span className="text-xs font-black uppercase text-slate-500 tracking-widest">{t('common.language')}</span>
                                 </div>
                                 <button
                                     onClick={() => changeLanguage('en')}
