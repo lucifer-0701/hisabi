@@ -16,6 +16,7 @@
             "digital": "Digital"
         },
         "empty_cart": "Cart is empty",
+        "cart": "Cart",
         "no_products": "No products found",
         "all_categories": "All",
         "discount_code": "Discount Code",
