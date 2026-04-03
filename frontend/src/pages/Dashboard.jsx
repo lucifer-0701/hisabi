@@ -5,10 +5,11 @@ import api from '../api/axios';
 import {
     DollarSign, FileText, AlertTriangle, Wallet, Package,
     TrendingUp, ShoppingCart, BarChart2, ArrowUpRight,
-    Award, Medal, Target, ChevronRight
+    Award, Medal, Target, ChevronRight, User, LogOut, Crown
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { usePlan } from '../hooks/usePlan';
+import PricingModal from '../components/PricingModal';
 
 
 const SkeletonCard = () => (
@@ -54,16 +55,57 @@ const RankBadge = ({ rank }) => {
     );
 };
 
+const MobileProfileSection = ({ user, t, onUpgrade, onLogout, isRTL, plan }) => (
+    <div className="lg:hidden bg-white rounded-3xl border border-slate-100 p-5 shadow-sm space-y-4 animate-in slide-in-from-top-4 duration-500">
+        <div className={`flex items-center gap-4 ${isRTL ? 'flex-row-reverse text-right' : ''}`}>
+            <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-lg shadow-slate-900/10">
+                <User className="w-6 h-6 opacity-80" />
+            </div>
+            <div className="flex-1 min-w-0">
+                <h2 className="text-base font-black text-slate-900 truncate">{user?.username}</h2>
+                <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">{user?.role}</span>
+                    <span className="w-1 h-1 bg-slate-200 rounded-full" />
+                    <div className="flex items-center gap-1">
+                        <Crown className="w-3 h-3 text-amber-500" />
+                        <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest">{plan?.name || 'Free'}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+            <button
+                onClick={onUpgrade}
+                className="flex items-center justify-center gap-2 py-3.5 bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-600/20 active:scale-95 transition-all"
+            >
+                <Crown className="w-3.5 h-3.5" />
+                {t('common.upgrade')}
+            </button>
+            <button
+                onClick={onLogout}
+                className="flex items-center justify-center gap-2 py-3.5 bg-slate-50 text-red-500 border border-red-100 rounded-2xl text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all"
+            >
+                <LogOut className="w-3.5 h-3.5 opacity-80" />
+                {t('Sign Out')}
+            </button>
+        </div>
+    </div>
+);
+
 const Dashboard = () => {
-    const { user } = useAuth();
-    const { isLocked } = usePlan();
-    const { t } = useTranslation();
+    const { user, logout } = useAuth();
+    const { isLocked, plan } = usePlan();
+    const { t, i18n } = useTranslation();
+    const navigate = useNavigate();
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [ads, setAds] = useState([]);
     const [targetData, setTargetData] = useState(null);
     const [dashError, setDashError] = useState(null);
+    const [showPricing, setShowPricing] = useState(false);
     const currency = user?.shop?.currency || 'AED';
+    const isRTL = i18n.language === 'ar';
 
     useEffect(() => {
         fetchAll();
@@ -238,8 +280,23 @@ const Dashboard = () => {
         return t('dashboard.greetings.evening');
     };
 
+    const handleLogout = () => {
+        logout();
+        navigate('/login');
+    };
+
     return (
         <div className="space-y-8 animate-fade-in">
+            {/* Mobile Profile Section */}
+            <MobileProfileSection
+                user={user}
+                t={t}
+                onUpgrade={() => setShowPricing(true)}
+                onLogout={handleLogout}
+                isRTL={isRTL}
+                plan={plan}
+            />
+
             {/* ── Hero ── */}
             <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-8 py-10 text-white">
                 {/* decorative blobs */}
@@ -432,6 +489,11 @@ const Dashboard = () => {
                     )}
                 </div>
             )}
+            {/* Pricing Modal */}
+            <PricingModal
+                isOpen={showPricing}
+                onClose={() => setShowPricing(false)}
+            />
         </div>
     );
 };
