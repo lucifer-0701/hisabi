@@ -170,7 +170,7 @@ const Sidebar = ({ location, onClose, isLocked, onUpgradeTrigger }) => {
     );
 };
 
-const UserDropdown = ({ user, handleLogout, isRTL, t }) => {
+const UserDropdown = ({ user, handleLogout, isRTL, t, onUpgrade, plan }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [view, setView] = useState('main'); // 'main' or 'language'
     const { i18n } = useTranslation();
@@ -211,6 +211,21 @@ const UserDropdown = ({ user, handleLogout, isRTL, t }) => {
                                     <p className="text-xs font-black text-slate-900">{user?.username}</p>
                                     <p className="text-[10px] font-bold text-slate-400 truncate">{user?.shop?.name}</p>
                                 </div>
+
+                                {user?.role !== 'staff' && (
+                                    <div className="px-2 pb-1 border-b border-slate-50 mb-1">
+                                        <button
+                                            onClick={() => {
+                                                setIsOpen(false);
+                                                onUpgrade?.();
+                                            }}
+                                            className={`w-full flex items-center gap-3 px-3 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-md shadow-blue-600/20 active:scale-[0.97] transition-all ${isRTL ? 'flex-row-reverse' : ''}`}
+                                        >
+                                            <Crown className="w-3.5 h-3.5" />
+                                            {t('common.upgrade')}
+                                        </button>
+                                    </div>
+                                )}
 
                                 {user?.role !== 'staff' && (
                                     <Link
@@ -330,19 +345,38 @@ const Layout = () => {
             {/* Main content */}
             <div className={`flex-1 flex flex-col ${isRTL ? 'lg:mr-64' : 'lg:ml-64'} min-w-0`}>
                 {/* Mobile top bar */}
-                <header className="lg:hidden sticky top-0 z-30 flex items-center gap-3 px-4 h-14 bg-white border-b border-slate-100 shadow-sm">
-                    <button
-                        onClick={() => setMobileOpen(true)}
-                        className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 transition-colors"
-                    >
-                        <Menu className="w-5 h-5" />
-                    </button>
-                    <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 bg-blue-600 rounded-md flex items-center justify-center">
-                            <Store className="w-3.5 h-3.5 text-white" />
+                <header className="lg:hidden sticky top-0 z-30 flex items-center justify-between px-4 h-14 bg-white border-b border-slate-100 shadow-sm">
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => setMobileOpen(true)}
+                            className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 transition-colors"
+                        >
+                            <Menu className="w-5 h-5" />
+                        </button>
+                        <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 bg-blue-600 rounded-md flex items-center justify-center">
+                                <Store className="w-3.5 h-3.5 text-white" />
+                            </div>
+                            <span className="font-black text-slate-900 text-sm tracking-tight">Hisabi-POS</span>
                         </div>
-                        <span className="font-black text-slate-900 text-sm tracking-tight">Hisabi-POS</span>
                     </div>
+
+                    {location.pathname === '/dashboard' && (
+                        <div className="flex items-center gap-2">
+                             <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 bg-slate-100 rounded-lg">
+                                <Crown className={`w-3 h-3 ${plan === 'premium' ? 'text-amber-500' : plan === 'gold' ? 'text-blue-500' : 'text-slate-400'}`} />
+                                <span className="text-[9px] font-black uppercase tracking-widest text-slate-600">{plan}</span>
+                            </div>
+                            <UserDropdown 
+                                user={user} 
+                                handleLogout={handleLogout} 
+                                isRTL={isRTL} 
+                                t={t} 
+                                onUpgrade={() => setShowPricing(true)}
+                                plan={plan}
+                            />
+                        </div>
+                    )}
                 </header>
 
                 {/* Desktop Header */}
@@ -371,7 +405,14 @@ const Layout = () => {
                                     <Crown className={`w-3.5 h-3.5 ${plan === 'premium' ? 'text-amber-500' : plan === 'gold' ? 'text-blue-500' : 'text-slate-400'}`} />
                                     <span className="text-[10px] font-black uppercase tracking-widest text-slate-600">{plan}</span>
                                 </div>
-                                <UserDropdown user={user} handleLogout={handleLogout} isRTL={isRTL} t={t} />
+                                <UserDropdown 
+                                    user={user} 
+                                    handleLogout={handleLogout} 
+                                    isRTL={isRTL} 
+                                    t={t} 
+                                    onUpgrade={() => setShowPricing(true)}
+                                    plan={plan}
+                                />
                             </>
                         )}
                     </div>

@@ -5,6 +5,12 @@ import api from '../api/axios';
 import RazorpayCheckout from './RazorpayCheckout';
 
 // Region-aware pricing
+const planHierarchy = {
+    free: 0,
+    gold: 1,
+    premium: 2
+};
+
 const getPricing = (country) => {
     const isIN = country === 'IN';
     const isKW = country === 'KW';
@@ -84,6 +90,12 @@ const PricingModal = ({ isOpen, onClose }) => {
 
     const handleUpgrade = async (planName) => {
         if (planName === currentPlan) return;
+        
+        // Prevent Downgrade
+        if (planHierarchy[planName] < planHierarchy[currentPlan]) {
+            alert('Your current plan offers more features. To change to a base plan, please contact support.');
+            return;
+        }
 
         setUpgrading(planName);
         try {
@@ -216,7 +228,7 @@ const PricingModal = ({ isOpen, onClose }) => {
                                 </ul>
 
                                 {/* CTA — Razorpay for India, mock API for others */}
-                                {isIndia && plan.style !== 'free' && plan.style !== currentPlan ? (
+                                {isIndia && plan.style !== 'free' && plan.style !== currentPlan && planHierarchy[plan.style] > planHierarchy[currentPlan] ? (
                                     <RazorpayCheckout
                                         plan={plan.style}
                                         onSuccess={() => setTimeout(onClose, 600)}
@@ -224,10 +236,10 @@ const PricingModal = ({ isOpen, onClose }) => {
                                 ) : (
                                     <button
                                         onClick={() => handleUpgrade(plan.style)}
-                                        disabled={plan.style === currentPlan || !!upgrading}
+                                        disabled={plan.style === currentPlan || !!upgrading || planHierarchy[plan.style] < planHierarchy[currentPlan]}
                                         className={`
                                         w-full py-3 rounded-xl text-sm font-black transition-all duration-200 flex items-center justify-center gap-2
-                                        ${plan.style === currentPlan
+                                        ${plan.style === currentPlan || planHierarchy[plan.style] < planHierarchy[currentPlan]
                                                 ? 'border-2 border-slate-200 text-slate-400 cursor-not-allowed'
                                                 : style.btn
                                             }
@@ -236,6 +248,8 @@ const PricingModal = ({ isOpen, onClose }) => {
                                     >
                                         {upgrading === plan.style ? (
                                             <Loader2 className="w-4 h-4 animate-spin" />
+                                        ) : planHierarchy[plan.style] < planHierarchy[currentPlan] ? (
+                                            'Included'
                                         ) : plan.style === currentPlan ? (
                                             'Current Plan'
                                         ) : (
