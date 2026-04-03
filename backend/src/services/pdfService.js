@@ -256,21 +256,24 @@ const generateInvoicePDF = (invoice, shop) => {
             doc.text(`${currency} ${parseFloat(invoice.due_amount).toFixed(2)}`, totalsX + 10, totY + 30, { width: 230, align: 'right' });
         }
 
-        // ── Footer ────────────────────────────────────────────────────────────
-        const footerY = doc.page.height - 65;
+        // ── Footer: stamp on page 0 to prevent ghost blank pages ─────────────
+        doc.flushPages();
+        doc.switchToPage(0);
+
+        const footerY = doc.page.height - 58;
         setStroke(doc, BORDER);
         doc.moveTo(40, footerY).lineTo(40 + pageWidth, footerY).lineWidth(0.5).stroke();
 
-        doc.fontSize(11).font('Helvetica-Bold');
+        doc.fontSize(10).font('Helvetica-Bold');
         setColor(doc, TEXT_MAIN);
-        doc.text('Thank you for your business!', 40, footerY + 8, { align: 'center' });
+        doc.text('Thank you for your business!', 40, footerY + 6, { align: 'center', lineBreak: false });
 
         doc.fontSize(8).font('Helvetica');
         setColor(doc, TEXT_MUTED);
-        doc.text('If you have any questions about this invoice, please contact us.', 40, footerY + 20, { align: 'center' });
+        doc.text('If you have any questions about this invoice, please contact us.', 40, footerY + 18, { align: 'center', lineBreak: false });
         
         doc.fontSize(7).font('Helvetica-Bold');
-        doc.text('Powered by Hisabi', 40, footerY + 32, { align: 'center', opacity: 0.5 });
+        doc.text('Powered by Hisabi', 40, footerY + 29, { align: 'center', lineBreak: false });
 
         doc.end();
     });
