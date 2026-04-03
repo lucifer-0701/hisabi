@@ -2,7 +2,7 @@
 
 **Hisabi-POS** is a high-performance, full-stack SaaS Point of Sale and inventory management system designed for modern retail environments. Originally built for the UAE and Kuwait, it now features a specialized expansion for the **Indian market**, including GST compliance and localized payment processing.
 
-🌐 **Live:** *Coming soon — deploying to Netlify/Render*
+🌐 **Live:** *Deployed & Live (Frontend: Cloudflare Pages | Backend: Render)*
 
 ---
 
@@ -11,15 +11,17 @@
 | Module | Description |
 |---|---|
 | 🏪 **Enterprise Auth** | Global unique usernames, Admin/Staff roles, Shop-based segmentation |
+| 📱 **Mobile-First POS** | Fully responsive, tabbed interface for high-speed mobile checkout |
 | 📦 **Inventory Core** | Real-time stock tracking, Barcode/SKU support, Brand management |
-| 🧾 **Modern POS** | High-speed billing terminal with image support, Multi-tax configurations |
+| 🧾 **Modern Billing** | Interactive terminal with image support, Multi-tax configurations |
 | 🇮🇳 **India Expansion** | Specialized 18% GST calculation, HSN/SAC support, INR currency |
-| � **Digital Payments** | Integrated **Razorpay** checkout for Indian subscriptions |
-| � **Staff Management** | Admin-controlled team access, role-based permissions (Admin/Staff) |
-| �️ **Smart Invoices** | Professional PDF generation, tax-compliant headers, thermal printer friendly |
-| 🎯 **Sales Ops** | Daily/Monthly revenue targets, Expense tracking, Due payment collection |
-| � **Advanced Analytics** | Live dashboard KPIs, Top-selling product trends, Profit margin tracking |
-| 🌍 **Global Design** | English & Arabic (RTL) support with a premium, glassmorphism UI |
+| 💳 **Digital Payments** | Integrated **Razorpay** checkout for Indian subscriptions |
+| 🛡️ **Freemium Security**| Intelligent Plan Hierarchy (Free, Gold, Premium) with downgrade protections |
+| 👥 **Staff Management** | Admin-controlled team access, role-based permissions (Admin/Staff) |
+| 📄 **Smart Invoices** | Robust PDF & CSV exports with precise DB mapping (tax, status, grand total) |
+| 🎯 **Sales Ops** | Daily/Monthly revenue targets, Expense tracking, mobile-optimized Due Collection |
+| 📊 **Advanced Analytics** | High-performance JS-aggregated PostgreSQL KPIs, Live dashboard, Profit margins |
+| 🌍 **Global Design** | Dynamic English & Arabic (RTL) support with premium glassmorphism UI |
 
 ---
 
