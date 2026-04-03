@@ -275,41 +275,44 @@ const getAdvancedAnalytics = async (req, res) => {
         const shop_id = req.user.shop_id;
         const { startDate, endDate } = req.query;
 
-        let dateFilter = {};
+        let start, end;
         if (startDate && endDate) {
-            dateFilter = { [Op.between]: [new Date(startDate), new Date(endDate)] };
+            start = new Date(startDate);
+            end = new Date(endDate);
         } else {
-            const end = new Date();
-            const start = new Date();
+            end = new Date();
+            start = new Date();
             start.setDate(start.getDate() - 30);
-            dateFilter = { [Op.between]: [start, end] };
         }
+        start.setHours(0, 0, 0, 0);
+        end.setHours(23, 59, 59, 999);
 
-        // 1. Sales by Category
-        const salesByCategory = await InvoiceItem.findAll({
+        const dateFilter = { [Op.between]: [start, end] };
+
+        // 1. Sales by Category — fetch items with joins, aggregate in JS
+        const categoryItems = await InvoiceItem.findAll({
             include: [
                 {
                     model: Invoice,
-                    as: 'Invoice',
                     where: { shop_id, status: { [Op.in]: ['paid', 'partial'] }, date: dateFilter },
                     attributes: []
                 },
                 {
                     model: Product,
-                    as: 'Product',
-                    include: [{ model: Category, as: 'Category' }]
+                    include: [{ model: Category }]
                 }
-            ],
-            attributes: [
-                [sequelize.col('Product->Category.name'), 'category_name'],
-                [sequelize.fn('SUM', sequelize.col('line_total')), 'revenue'],
-                [sequelize.fn('SUM', sequelize.col('quantity')), 'quantity']
-            ],
-            group: [sequelize.col('Product->Category.name')],
-            raw: true
+            ]
         });
 
-        // 2. Peer hours / Sales by Hour
+        const categoryMap = {};
+        categoryItems.forEach(item => {
+            const catName = item.Product?.Category?.name || 'Uncategorized';
+            if (!categoryMap[catName]) categoryMap[catName] = { name: catName, revenue: 0, quantity: 0 };
+            categoryMap[catName].revenue += parseFloat(item.line_total || 0);
+            categoryMap[catName].quantity += item.quantity;
+        });
+
+        // 2. Sales by Hour
         const salesByHour = await Invoice.findAll({
             where: { shop_id, status: { [Op.in]: ['paid', 'partial'] }, date: dateFilter },
             attributes: [
@@ -322,7 +325,7 @@ const getAdvancedAnalytics = async (req, res) => {
             raw: true
         });
 
-        // 3. Top Customers (Loyalty)
+        // 3. Top Customers
         const topCustomers = await Invoice.findAll({
             where: { shop_id, status: { [Op.in]: ['paid', 'partial'] }, date: dateFilter, customer_name: { [Op.ne]: null } },
             attributes: [
@@ -337,11 +340,7 @@ const getAdvancedAnalytics = async (req, res) => {
         });
 
         res.json({
-            salesByCategory: salesByCategory.map(c => ({
-                name: c.category_name || 'Uncategorized',
-                revenue: parseFloat(c.revenue || 0),
-                quantity: parseFloat(c.quantity || 0)
-            })),
+            salesByCategory: Object.values(categoryMap),
             salesByHour: salesByHour.map(h => ({
                 hour: parseInt(h.hour),
                 count: parseInt(h.count),

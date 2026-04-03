@@ -77,7 +77,8 @@ const Reports = () => {
         try {
             const { startDate, endDate } = dateRange;
 
-            const [profitRes, trendRes, salesRes, dueStatsRes, advancedRes] = await Promise.all([
+            // Fetch all endpoints individually so one failure doesn't break everything
+            const results = await Promise.allSettled([
                 api.get(`/reports/profit?startDate=${startDate}&endDate=${endDate}`),
                 api.get(`/reports/trend?startDate=${startDate}&endDate=${endDate}`),
                 api.get(`/reports/daily?startDate=${startDate}&endDate=${endDate}`),
@@ -85,29 +86,35 @@ const Reports = () => {
                 isGoldOrAbove ? api.get(`/reports/advanced?startDate=${startDate}&endDate=${endDate}`) : Promise.resolve({ data: null })
             ]);
 
-            const dueStats = dueStatsRes.data;
-            if (advancedRes.data) setAdvancedData(advancedRes.data);
+            const profitRes = results[0].status === 'fulfilled' ? results[0].value : null;
+            const trendRes = results[1].status === 'fulfilled' ? results[1].value : null;
+            const salesRes = results[2].status === 'fulfilled' ? results[2].value : null;
+            const dueStatsRes = results[3].status === 'fulfilled' ? results[3].value : null;
+            const advancedRes = results[4].status === 'fulfilled' ? results[4].value : null;
+
+            const dueStats = dueStatsRes?.data || {};
+            if (advancedRes?.data) setAdvancedData(advancedRes.data);
 
             setStats({
-                totalSales: salesRes.data.totalSales,
-                totalRevenue: profitRes.data.totalRevenue,
-                netProfit: profitRes.data.totalProfit,
-                profitMargin: profitRes.data.margin,
-                totalDue: profitRes.data.totalDue || 0,
-                totalDueCollected: dueStats.totalCollected,
-                totalPendingDues: dueStats.totalPending,
-                dueCollectedToday: dueStats.dueToday,
-                dueCollectedWeek: dueStats.dueWeek,
-                salesChange: 5.2 // Placeholder
+                totalSales: salesRes?.data?.totalSales || 0,
+                totalRevenue: profitRes?.data?.totalRevenue || 0,
+                netProfit: profitRes?.data?.totalProfit || 0,
+                profitMargin: profitRes?.data?.margin || 0,
+                totalDue: profitRes?.data?.totalDue || 0,
+                totalDueCollected: dueStats.totalCollected || 0,
+                totalPendingDues: dueStats.totalPending || 0,
+                dueCollectedToday: dueStats.dueToday || 0,
+                dueCollectedWeek: dueStats.dueWeek || 0,
+                salesChange: 5.2
             });
 
-            setTrendData(trendRes.data);
+            setTrendData(trendRes?.data || []);
 
-            const totalOrders = profitRes.data.invoiceCount || 0;
+            const totalOrders = profitRes?.data?.invoiceCount || 0;
             setSummary(prev => ({
                 ...prev,
                 totalOrders,
-                avgOrderValue: totalOrders > 0 ? (salesRes.data.totalSales / totalOrders) : 0,
+                avgOrderValue: totalOrders > 0 ? ((salesRes?.data?.totalSales || 0) / totalOrders) : 0,
             }));
 
         } catch (error) {

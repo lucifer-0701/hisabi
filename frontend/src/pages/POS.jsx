@@ -94,6 +94,7 @@ const POS = () => {
     const [isValidatingCode, setIsValidatingCode] = useState(false);
 
     const [currentTime, setCurrentTime] = useState(new Date());
+    const [mobileTab, setMobileTab] = useState('products'); // 'products' | 'cart'
 
     // Auto-generated Invoice # (Mock for UI)
     const [mockInvoiceNum] = useState(`INV-${Date.now().toString().slice(-6)}`);
@@ -302,7 +303,9 @@ const POS = () => {
     }
 
     return (
-        <div className={`flex h-screen overflow-hidden bg-white ${isRTL ? 'font-arabic' : ''}`} dir={isRTL ? 'rtl' : 'ltr'}>
+        <>
+        {/* ══════ DESKTOP LAYOUT ══════ */}
+        <div className={`hidden lg:flex h-screen overflow-hidden bg-white ${isRTL ? 'font-arabic' : ''}`} dir={isRTL ? 'rtl' : 'ltr'}>
             {/* Center Area: Product Section */}
             <div className="flex-1 flex flex-col min-w-0 border-r border-slate-200">
                 {/* Top Header & Search */}
@@ -606,6 +609,289 @@ const POS = () => {
                 </div>
             </div>
         </div>
+
+        {/* ══════ MOBILE LAYOUT ══════ */}
+        <div className={`lg:hidden flex flex-col h-screen bg-white ${isRTL ? 'font-arabic' : ''}`} dir={isRTL ? 'rtl' : 'ltr'}>
+            {mobileTab === 'products' ? (
+                /* ── Mobile Products View ── */
+                <div className="flex flex-col flex-1 min-h-0">
+                    {/* Search & Categories */}
+                    <div className="p-3 border-b border-slate-200 bg-white sticky top-0 z-10 space-y-3">
+                        <div className="relative">
+                            <Search className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400`} />
+                            <input
+                                type="text"
+                                placeholder={t('pos.search_placeholder')}
+                                className={`w-full ${isRTL ? 'pr-10 pl-4' : 'pl-10 pr-4'} py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:border-blue-400 outline-none transition-all font-medium`}
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                            />
+                        </div>
+                        <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+                            <button
+                                onClick={() => setSelectedCategory(null)}
+                                className={`px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap transition-all ${!selectedCategory ? 'bg-slate-900 text-white shadow-md' : 'bg-slate-100 text-slate-500'}`}
+                            >
+                                {t('pos.all_categories')}
+                            </button>
+                            {categories.map(cat => (
+                                <button
+                                    key={cat.id}
+                                    onClick={() => setSelectedCategory(cat.id)}
+                                    className={`px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap transition-all ${selectedCategory === cat.id ? 'bg-slate-900 text-white shadow-md' : 'bg-slate-100 text-slate-500'}`}
+                                >
+                                    {cat.name}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Product Grid */}
+                    <div className="flex-1 overflow-y-auto p-3 bg-slate-50/30">
+                        <div className="grid grid-cols-2 gap-3">
+                            {products.map(product => (
+                                <ProductCard
+                                    key={product.id}
+                                    product={product}
+                                    currency={currency}
+                                    isRTL={isRTL}
+                                    onAdd={addToCart}
+                                    t={t}
+                                />
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Floating Cart Button */}
+                    {cart.length > 0 && (
+                        <button
+                            onClick={() => setMobileTab('cart')}
+                            className="fixed bottom-6 right-6 z-50 w-16 h-16 bg-slate-900 text-white rounded-2xl shadow-2xl shadow-slate-900/30 flex items-center justify-center active:scale-95 transition-transform"
+                        >
+                            <ShoppingCart className="w-6 h-6" />
+                            <span className="absolute -top-2 -right-2 w-6 h-6 bg-blue-600 text-white text-[10px] font-black rounded-full flex items-center justify-center shadow-lg">
+                                {cart.reduce((sum, i) => sum + i.quantity, 0)}
+                            </span>
+                        </button>
+                    )}
+                </div>
+            ) : (
+                /* ── Mobile Cart/Billing View ── */
+                <div className="flex flex-col flex-1 min-h-0">
+                    {/* Back to Products */}
+                    <div className="p-3 border-b border-slate-200 bg-white sticky top-0 z-10 flex items-center gap-3">
+                        <button
+                            onClick={() => setMobileTab('products')}
+                            className="p-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
+                        >
+                            <ChevronRight className={`w-5 h-5 ${isRTL ? '' : 'rotate-180'}`} />
+                        </button>
+                        <div>
+                            <p className="text-sm font-black text-slate-900">{t('pos.cart')} ({cart.reduce((s, i) => s + i.quantity, 0)})</p>
+                            <p className="text-[10px] font-bold text-slate-400">#{mockInvoiceNum}</p>
+                        </div>
+                    </div>
+
+                    {/* Customer Info */}
+                    <div className="p-3 border-b border-slate-100 space-y-2">
+                        <div className="relative">
+                            <User className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400`} />
+                            <input
+                                type="text"
+                                placeholder={t('pos.customer_name')}
+                                className={`w-full ${isRTL ? 'pr-9 pl-3' : 'pl-9 pr-3'} py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-blue-400 transition-all`}
+                                value={customerName}
+                                onChange={(e) => setCustomerName(e.target.value)}
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                            <input
+                                type="text"
+                                placeholder={t('pos.customer_phone')}
+                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-blue-400 transition-all"
+                                value={customerPhone}
+                                onChange={(e) => setCustomerPhone(e.target.value)}
+                            />
+                            <input
+                                type="email"
+                                placeholder={t('pos.customer_email')}
+                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-blue-400 transition-all"
+                                value={customerEmail}
+                                onChange={(e) => setCustomerEmail(e.target.value)}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Cart Items + Summary — scrollable */}
+                    <div className="flex-1 overflow-y-auto">
+                        {/* Cart Items */}
+                        <div className="p-3 space-y-2">
+                            {cart.map(item => (
+                                <div key={item.product_id} className="flex gap-3 p-2.5 bg-white border border-slate-100 rounded-xl items-center">
+                                    <div className="w-10 h-10 rounded-lg bg-slate-50 flex-shrink-0 border border-slate-100 overflow-hidden">
+                                        {item.image_path ? (
+                                            <img src={`${IMAGE_BASE_URL}${item.image_path}`} alt={item.name} className="w-full h-full object-cover" />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-slate-200">
+                                                <Package className="w-5 h-5" />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-[11px] font-bold text-slate-900 truncate">{item.name}</p>
+                                        <p className="text-[10px] text-slate-400 font-medium">{currency} {item.price.toFixed(2)}</p>
+                                    </div>
+                                    <div className="flex items-center bg-slate-100 rounded-lg p-0.5 gap-0.5">
+                                        <button onClick={() => updateQuantity(item.product_id, item.quantity - 1)} className="w-6 h-6 flex items-center justify-center bg-white rounded-md shadow-sm">
+                                            <Minus className="w-3 h-3" />
+                                        </button>
+                                        <span className="w-5 text-center text-[11px] font-black tabular-nums">{item.quantity}</span>
+                                        <button onClick={() => updateQuantity(item.product_id, item.quantity + 1)} className="w-6 h-6 flex items-center justify-center bg-white rounded-md shadow-sm">
+                                            <Plus className="w-3 h-3" />
+                                        </button>
+                                    </div>
+                                    <p className="text-xs font-black text-slate-900 tabular-nums w-16 text-right">{currency} {(item.price * item.quantity).toFixed(2)}</p>
+                                </div>
+                            ))}
+                            {cart.length === 0 && (
+                                <div className="flex flex-col items-center justify-center py-16 text-slate-300">
+                                    <ShoppingCart className="w-12 h-12 mb-3 opacity-10" />
+                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{t('pos.empty_cart')}</p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Summary */}
+                        <div className="p-3 space-y-3">
+                            <div className="space-y-2 pt-3 border-t border-slate-100">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{t('pos.subtotal')}</span>
+                                    <span className="text-xs font-black text-slate-900 tabular-nums">{currency} {subtotal.toFixed(2)}</span>
+                                </div>
+                                {currency === 'AED' && (
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-[10px] text-blue-400 font-bold uppercase tracking-wider">{t('pos.vat')}</span>
+                                        <span className="text-xs font-black text-blue-600 tabular-nums">+{currency} {vatValue.toFixed(2)}</span>
+                                    </div>
+                                )}
+                                <div className="flex justify-between items-center gap-3">
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{t('pos.discount')}</span>
+                                        <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+                                            <button onClick={() => setDiscountType('amount')} className={`p-1 rounded-md transition-all ${discountType === 'amount' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-400'}`}>
+                                                <Banknote className="w-3 h-3" />
+                                            </button>
+                                            <button onClick={() => setDiscountType('percent')} className={`p-1 rounded-md transition-all ${discountType === 'percent' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-400'}`}>
+                                                <Percent className="w-3 h-3" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 border border-slate-200 rounded-xl px-3 py-1 bg-slate-50">
+                                        <input
+                                            type="number"
+                                            className="w-14 bg-transparent text-right outline-none font-black text-xs text-slate-900 tabular-nums"
+                                            value={discount}
+                                            onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
+                                        />
+                                        <span className="text-[10px] text-slate-400 font-black uppercase">{discountType === 'percent' ? '%' : currency}</span>
+                                    </div>
+                                </div>
+                                {/* Discount Code */}
+                                <div className="flex gap-2">
+                                    <div className="relative flex-1">
+                                        <Ticket className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400`} />
+                                        <input
+                                            type="text"
+                                            placeholder={t('pos.discount_code')}
+                                            className={`w-full ${isRTL ? 'pr-9 pl-3' : 'pl-9 pr-3'} py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:bg-white focus:border-blue-400 transition-all`}
+                                            value={discountCode}
+                                            onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
+                                        />
+                                    </div>
+                                    <button
+                                        onClick={handleApplyDiscountCode}
+                                        disabled={!discountCode.trim() || isValidatingCode}
+                                        className="px-3 py-1.5 bg-slate-900 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-800 disabled:bg-slate-200 transition-all"
+                                    >
+                                        {isValidatingCode ? '...' : t('pos.apply')}
+                                    </button>
+                                </div>
+                                {appliedDiscountCode && (
+                                    <div className="flex items-center justify-between px-3 py-1.5 bg-emerald-50 border border-emerald-100 rounded-xl">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                                            <span className="text-[10px] font-black text-emerald-700 uppercase">{appliedDiscountCode.code.code}</span>
+                                        </div>
+                                        <button onClick={() => setAppliedDiscountCode(null)} className="text-emerald-400 hover:text-emerald-600">
+                                            <X className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Paid / Due */}
+                            <div className="grid grid-cols-2 gap-2">
+                                <div className="space-y-1">
+                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('pos.paid_amount')}</p>
+                                    <input
+                                        type="number"
+                                        placeholder="0.00"
+                                        className="w-full px-3 py-2 bg-emerald-50/30 border border-emerald-100 rounded-xl text-xs font-black text-emerald-700 outline-none focus:border-emerald-400 tabular-nums"
+                                        value={paidAmount || ''}
+                                        onChange={(e) => setPaidAmount(parseFloat(e.target.value) || 0)}
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('pos.balance_due')}</p>
+                                    <div className={`w-full px-3 py-2 rounded-xl border text-xs font-black tabular-nums flex items-center ${dueAmount > 0 ? 'bg-red-50 border-red-100 text-red-600' : 'bg-emerald-50 border-emerald-100 text-emerald-600'}`}>
+                                        {currency} {dueAmount.toFixed(2)}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Grand Total */}
+                            <div className="bg-slate-900 p-4 rounded-2xl text-white shadow-xl relative overflow-hidden">
+                                <div className="flex items-center justify-between">
+                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{t('pos.grand_total')}</p>
+                                    <div className="flex items-baseline gap-1">
+                                        <span className="text-sm font-bold text-slate-500 tabular-nums">{currency}</span>
+                                        <h2 className="text-2xl font-black tracking-tighter tabular-nums">{grandTotal.toFixed(2)}</h2>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Payment Method & Checkout */}
+                            <div className="grid grid-cols-3 gap-2 bg-slate-50 p-1.5 rounded-xl border border-slate-200/60">
+                                {[
+                                    { id: 'cash', icon: Wallet, label: t('pos.payment_methods.cash') },
+                                    { id: 'card', icon: CreditCard, label: t('pos.payment_methods.card') },
+                                    { id: 'digital', icon: QrCode, label: t('pos.payment_methods.digital') }
+                                ].map(method => (
+                                    <button
+                                        key={method.id}
+                                        onClick={() => setPaymentMethod(method.id)}
+                                        className={`flex flex-col items-center justify-center py-2 px-1 rounded-lg transition-all ${paymentMethod === method.id ? 'bg-white text-blue-600 shadow-md ring-1 ring-slate-200' : 'text-slate-400'}`}
+                                    >
+                                        <method.icon className="w-4 h-4 mb-0.5" />
+                                        <span className="text-[8px] font-black uppercase tracking-widest">{method.label}</span>
+                                    </button>
+                                ))}
+                            </div>
+
+                            <button
+                                onClick={handleCheckout}
+                                disabled={cart.length === 0 || loading}
+                                className="w-full py-3.5 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-200 disabled:cursor-not-allowed text-white rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-lg shadow-slate-900/10"
+                            >
+                                {loading ? '...' : t('pos.complete_transaction')}
+                                {!loading && <ChevronRight className={`w-5 h-5 opacity-40 ${isRTL ? 'rotate-180' : ''}`} />}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+        </>
     );
 };
 
