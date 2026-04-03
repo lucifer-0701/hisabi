@@ -257,20 +257,20 @@ const generateInvoicePDF = (invoice, shop) => {
         }
 
         // ── Footer ────────────────────────────────────────────────────────────
-        const footerY = doc.page.height - 70;
+        const footerY = doc.page.height - 65;
         setStroke(doc, BORDER);
         doc.moveTo(40, footerY).lineTo(40 + pageWidth, footerY).lineWidth(0.5).stroke();
 
         doc.fontSize(11).font('Helvetica-Bold');
         setColor(doc, TEXT_MAIN);
-        doc.text('Thank you for your business!', 40, footerY + 12, { align: 'center' });
+        doc.text('Thank you for your business!', 40, footerY + 8, { align: 'center' });
 
         doc.fontSize(8).font('Helvetica');
         setColor(doc, TEXT_MUTED);
-        doc.text('If you have any questions about this invoice, please contact us.', 40, footerY + 26, { align: 'center' });
+        doc.text('If you have any questions about this invoice, please contact us.', 40, footerY + 20, { align: 'center' });
         
         doc.fontSize(7).font('Helvetica-Bold');
-        doc.text('Powered by Hisabi', 40, footerY + 42, { align: 'center', opacity: 0.5 });
+        doc.text('Powered by Hisabi', 40, footerY + 32, { align: 'center', opacity: 0.5 });
 
         doc.end();
     });
