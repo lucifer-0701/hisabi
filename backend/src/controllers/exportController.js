@@ -41,8 +41,8 @@ const exportSalesCSV = async (req, res) => {
                 Quantity: item.quantity,
                 UnitPrice: item.unit_price,
                 Total: item.total_price,
-                PaymentStatus: inv.payment_status,
-                TotalInvoiceAmount: inv.total_amount
+                PaymentStatus: inv.status,
+                TotalInvoiceAmount: inv.grand_total
             }))
         );
 
@@ -106,13 +106,13 @@ const exportSalesPDF = async (req, res) => {
             doc.text(inv.invoice_number, 50, doc.y);
             doc.text(inv.created_at.toISOString().split('T')[0], 120, doc.y);
             doc.text(inv.customer_name || 'Walking Customer', 200, doc.y, { width: 140 });
-            doc.text(inv.payment_status, 350, doc.y);
-            doc.text(`${shop.currency} ${inv.total_amount}`, 450, doc.y, { align: 'right' });
+            doc.text(inv.status, 350, doc.y);
+            doc.text(`${shop.currency} ${inv.grand_total}`, 450, doc.y, { align: 'right' });
             doc.moveDown();
         });
 
         // Footer
-        const totalSales = invoices.reduce((sum, inv) => sum + Number(inv.total_amount), 0);
+        const totalSales = invoices.reduce((sum, inv) => sum + Number(inv.grand_total), 0);
         doc.moveDown().font('Helvetica-Bold');
         doc.text(`Total Sales: ${shop.currency} ${totalSales.toFixed(2)}`, { align: 'right' });
 
