@@ -43,9 +43,12 @@ const generateInvoicePDF = (invoice, shop) => {
         doc.on('error', reject);
 
         const pageWidth = doc.page.width - 80; // minus margins
-        const isUAE = shop.vat_enabled;
+        const country = shop.country || 'AE';
+        const isIndia = country === 'IN';
+        const isUAE = country === 'AE';
         const currency = shop.currency || 'AED';
         const date = formatDate(invoice.date);
+        const time = new Date(invoice.date).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
         // ── Header bar ──────────────────────────────────────────────────────
         // Shop name
@@ -69,17 +72,25 @@ const generateInvoicePDF = (invoice, shop) => {
         }
         if (isUAE && shop.trn) {
             doc.font('Helvetica-Bold').text(`TRN: ${shop.trn}`, 40, shopY);
-            doc.font('Helvetica');
+            shopY += 13;
+        } else if (isIndia && shop.gstin) {
+            doc.font('Helvetica-Bold').text(`GSTIN: ${shop.gstin}`, 40, shopY);
+            shopY += 13;
         }
 
         // Invoice meta top-right
         doc.fontSize(10).font('Helvetica');
         setColor(doc, TEXT_MUTED);
-        doc.text(`ID: #${invoice.id.toString().padStart(6, '0')}`, 40, 68, { align: 'right' });
+        doc.text(`ID: #${invoice.invoice_number}`, 40, 68, { align: 'right' });
         doc.text(`Date: ${date}`, 40, 82, { align: 'right' });
+        
+        // Add Payment Info below Date
+        doc.fontSize(8);
+        doc.text(`Method: ${(invoice.payment_method || 'Cash').toUpperCase()}`, 40, 96, { align: 'right' });
+        doc.text(`Time: ${time}`, 40, 108, { align: 'right' });
 
         // Divider line under header
-        const divY = 105;
+        const divY = 125;
         setStroke(doc, PRIMARY);
         doc.moveTo(40, divY).lineTo(40 + pageWidth, divY).lineWidth(2).stroke();
 
@@ -90,16 +101,34 @@ const generateInvoicePDF = (invoice, shop) => {
         doc.fontSize(13).font('Helvetica-Bold');
         setColor(doc, TEXT_MAIN);
         doc.text(invoice.customer_name || 'Walk-in Customer', 40, divY + 28);
+        
+        // Customer Details Expansion
+        doc.fontSize(9).font('Helvetica');
+        setColor(doc, TEXT_MUTED);
+        let custY = divY + 44;
+        if (invoice.customer_phone) {
+            doc.text(`Phone: ${invoice.customer_phone}`, 40, custY);
+            custY += 12;
+        }
+        if (invoice.customer_email) {
+            doc.text(`Email: ${invoice.customer_email}`, 40, custY);
+        }
+
+        // ── Payment Highlight Line ──────────────────────────────────────────
+        const highlightY = divY + 80;
+        doc.fontSize(10).font('Helvetica-Bold');
+        setColor(doc, TEXT_MAIN);
+        doc.text(`${currency} ${parseFloat(invoice.paid_amount).toFixed(2)} paid on ${date}, ${time}`, 40, highlightY, { align: 'center', width: pageWidth });
 
         // ── Items table ─────────────────────────────────────────────────────
-        const tableTop = divY + 60;
+        const tableTop = highlightY + 25;
         const colX = {
             no: 40,
             desc: 80,
-            qty: 340,
-            price: 390,
-            mrp: 455,
-            total: 510,
+            qty: isIndia ? 310 : 340,
+            price: isIndia ? 360 : 410,
+            mrp: isIndia ? 435 : 0,
+            total: 495,
         };
 
         // Table header background
@@ -114,9 +143,11 @@ const generateInvoicePDF = (invoice, shop) => {
         doc.text('#', colX.no, thY, { width: 36, align: 'center' });
         doc.text('ITEM DESCRIPTION', colX.desc, thY);
         doc.text('QTY', colX.qty, thY, { width: 45, align: 'center' });
-        doc.text('PRICE', colX.price, thY, { width: 60, align: 'right' });
-        doc.text('MRP', colX.mrp, thY, { width: 50, align: 'right' });
-        doc.text('TOTAL', colX.total, thY, { width: 45, align: 'right' });
+        doc.text('PRICE', colX.price, thY, { width: 70, align: 'right' });
+        if (isIndia) {
+            doc.text('MRP', colX.mrp, thY, { width: 55, align: 'right' });
+        }
+        doc.text('TOTAL', colX.total, thY, { width: 60, align: 'right' });
 
         // Header bottom border
         setStroke(doc, BORDER);
@@ -152,14 +183,16 @@ const generateInvoicePDF = (invoice, shop) => {
             doc.fontSize(9).font('Helvetica');
             setColor(doc, TEXT_MAIN);
             doc.text(`${item.quantity}`, colX.qty, textY, { width: 45, align: 'center' });
-            doc.text(parseFloat(item.unit_price).toFixed(2), colX.price, textY, { width: 60, align: 'right' });
-            doc.text(
-                item.mrp && parseFloat(item.mrp) > 0 ? parseFloat(item.mrp).toFixed(2) : '—',
-                colX.mrp, textY, { width: 50, align: 'right' }
-            );
+            doc.text(parseFloat(item.unit_price).toFixed(2), colX.price, textY, { width: 70, align: 'right' });
+            if (isIndia) {
+                doc.text(
+                    item.mrp && parseFloat(item.mrp) > 0 ? parseFloat(item.mrp).toFixed(2) : '—',
+                    colX.mrp, textY, { width: 55, align: 'right' }
+                );
+            }
             doc.text(
                 (item.quantity * item.unit_price).toFixed(2),
-                colX.total, textY, { width: 45, align: 'right' }
+                colX.total, textY, { width: 60, align: 'right' }
             );
 
             // Row border
@@ -193,8 +226,9 @@ const generateInvoicePDF = (invoice, shop) => {
         };
 
         drawTotalRow('Subtotal', `${currency} ${parseFloat(invoice.subtotal).toFixed(2)}`);
-        if (isUAE) {
-            drawTotalRow('VAT (5%)', `${currency} ${parseFloat(invoice.tax_total).toFixed(2)}`);
+        if (parseFloat(invoice.tax_total) > 0) {
+            const taxLabel = isIndia ? 'GST' : (isUAE ? 'VAT (5%)' : 'Tax');
+            drawTotalRow(taxLabel, `${currency} ${parseFloat(invoice.tax_total).toFixed(2)}`);
         }
         if (parseFloat(invoice.discount) > 0) {
             drawTotalRow('Discount', `-${currency} ${parseFloat(invoice.discount).toFixed(2)}`);
@@ -231,9 +265,12 @@ const generateInvoicePDF = (invoice, shop) => {
         setColor(doc, TEXT_MAIN);
         doc.text('Thank you for your business!', 40, footerY + 12, { align: 'center' });
 
-        doc.fontSize(9).font('Helvetica');
+        doc.fontSize(8).font('Helvetica');
         setColor(doc, TEXT_MUTED);
-        doc.text('If you have any questions about this invoice, please contact us.', 40, footerY + 28, { align: 'center' });
+        doc.text('If you have any questions about this invoice, please contact us.', 40, footerY + 26, { align: 'center' });
+        
+        doc.fontSize(7).font('Helvetica-Bold');
+        doc.text('Powered by Hisabi', 40, footerY + 42, { align: 'center', opacity: 0.5 });
 
         doc.end();
     });

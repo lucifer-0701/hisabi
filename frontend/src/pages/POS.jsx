@@ -278,7 +278,18 @@ const POS = () => {
                     </div>
 
                     <div className="space-y-3">
-                        <button className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-slate-800 transition-all">
+                        <button 
+                            onClick={async () => {
+                                try {
+                                    const res = await api.get(`/invoices/${invoice.id}/pdf`, { responseType: 'blob' });
+                                    const url = URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+                                    window.open(url, '_blank');
+                                } catch (err) {
+                                    alert(t('invoices.errors.download_failed'));
+                                }
+                            }}
+                            className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-slate-800 transition-all"
+                        >
                             <Printer className="w-4 h-4" /> {t('pos.print_receipt')}
                         </button>
                         <button className="w-full py-4 bg-white border border-slate-200 text-slate-900 rounded-2xl font-black uppercase tracking-widest hover:bg-slate-50 transition-all" onClick={resetPOS}>

@@ -104,6 +104,31 @@ const InvoiceRow = ({ inv, user, onDelete, onDownload, currency }) => {
                 <tr className="bg-slate-50/50 border-b border-slate-100">
                     <td colSpan={7} className="p-0">
                         <div className="px-14 py-6 animate-in slide-in-from-top-2 duration-300 space-y-4">
+                            {/* Professional Details Expansion */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
+                                <div className="space-y-2">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{t('pos.customer_details')}</p>
+                                    <div className="flex flex-col gap-1">
+                                        <p className="text-sm font-bold text-slate-900">{inv.customer_name || t('pos.customer_name_default')}</p>
+                                        {inv.customer_phone && <p className="text-xs text-slate-500 font-medium">Ph: {inv.customer_phone}</p>}
+                                        {inv.customer_email && <p className="text-xs text-slate-500 font-medium">Em: {inv.customer_email}</p>}
+                                    </div>
+                                </div>
+                                <div className="text-right space-y-2">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{t('pos.payment_info')}</p>
+                                    <div className="flex flex-col gap-1 items-end">
+                                        <p className="text-sm font-bold text-slate-900">{(inv.payment_method || 'Cash').toUpperCase()}</p>
+                                        <p className="text-xs text-slate-500 font-medium">{fmt(inv.date)} at {fmtTime(inv.date)}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Payment Highlight */}
+                            <div className="text-center py-2 px-4 bg-slate-50 border border-slate-100 rounded-xl">
+                                <p className="text-xs font-black text-slate-900 uppercase tracking-widest">
+                                    {currency} {parseFloat(inv.paid_amount).toFixed(2)} paid on {fmt(inv.date)}, {fmtTime(inv.date)}
+                                </p>
+                            </div>
 
                             {/* Items Table */}
                             <div className="bg-white rounded-[2rem] border border-slate-200 overflow-hidden shadow-sm">
@@ -113,7 +138,9 @@ const InvoiceRow = ({ inv, user, onDelete, onDownload, currency }) => {
                                             <th className="px-6 py-3 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{t('invoices.items_list')}</th>
                                             <th className="px-6 py-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{t('common.qty')}</th>
                                             <th className="px-6 py-3 text-right text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{t('common.price')}</th>
-                                            <th className="px-6 py-3 text-right text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{t('common.mrp')}</th>
+                                            {user?.shop?.country === 'IN' && (
+                                                <th className="px-6 py-3 text-right text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{t('common.mrp')}</th>
+                                            )}
                                             <th className="px-6 py-3 text-right text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{t('common.total')}</th>
                                         </tr>
                                     </thead>
@@ -130,9 +157,11 @@ const InvoiceRow = ({ inv, user, onDelete, onDownload, currency }) => {
                                                 </td>
                                                 <td className="px-6 py-4 text-center text-xs font-black text-slate-700 tabular-nums">{item.quantity}</td>
                                                 <td className="px-6 py-4 text-right text-xs font-black text-slate-700 tabular-nums">{currency} {parseFloat(item.unit_price).toFixed(2)}</td>
-                                                <td className="px-6 py-4 text-right text-xs font-black text-slate-400 tabular-nums line-through decoration-red-400/30">
-                                                    {item.mrp && parseFloat(item.mrp) > 0 ? `${currency} ${parseFloat(item.mrp).toFixed(2)}` : '—'}
-                                                </td>
+                                                {user?.shop?.country === 'IN' && (
+                                                    <td className="px-6 py-4 text-right text-xs font-black text-slate-400 tabular-nums line-through decoration-red-400/30">
+                                                        {item.mrp && parseFloat(item.mrp) > 0 ? `${currency} ${parseFloat(item.mrp).toFixed(2)}` : '—'}
+                                                    </td>
+                                                )}
                                                 <td className="px-6 py-4 text-right text-xs font-black text-slate-900 tabular-nums">
                                                     {currency} {(item.quantity * item.unit_price).toFixed(2)}
                                                 </td>
@@ -141,23 +170,23 @@ const InvoiceRow = ({ inv, user, onDelete, onDownload, currency }) => {
                                     </tbody>
                                     <tfoot className="bg-slate-50/50">
                                         <tr>
-                                            <td colSpan={4} className="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{t('common.subtotal')}</td>
+                                            <td colSpan={user?.shop?.country === 'IN' ? 4 : 3} className="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{t('common.subtotal')}</td>
                                             <td className="px-6 py-4 text-right text-sm font-black text-slate-900 tabular-nums">{currency} {parseFloat(inv.subtotal).toFixed(2)}</td>
                                         </tr>
                                         {parseFloat(inv.tax_total) > 0 && (
                                             <tr>
-                                                <td colSpan={4} className="px-6 py-4 text-right text-[10px] font-black text-blue-400 uppercase tracking-[0.2em]">VAT (5%)</td>
+                                                <td colSpan={user?.shop?.country === 'IN' ? 4 : 3} className="px-6 py-4 text-right text-[10px] font-black text-blue-400 uppercase tracking-[0.2em]">{user?.shop?.country === 'IN' ? 'GST' : (user?.shop?.country === 'AE' ? 'VAT (5%)' : 'Tax')}</td>
                                                 <td className="px-6 py-4 text-right text-sm font-black text-blue-600 tabular-nums">+{currency} {parseFloat(inv.tax_total).toFixed(2)}</td>
                                             </tr>
                                         )}
                                         {parseFloat(inv.discount) > 0 && (
                                             <tr>
-                                                <td colSpan={4} className="px-6 py-4 text-right text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em]">{t('common.discount')}</td>
+                                                <td colSpan={user?.shop?.country === 'IN' ? 4 : 3} className="px-6 py-4 text-right text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em]">{t('common.discount')}</td>
                                                 <td className="px-6 py-4 text-right text-sm font-black text-emerald-600 tabular-nums">-{currency} {parseFloat(inv.discount).toFixed(2)}</td>
                                             </tr>
                                         )}
                                         <tr className="bg-slate-900 text-white">
-                                            <td colSpan={4} className="px-6 py-4 text-right text-[10px] font-black uppercase tracking-[0.2em] opacity-60">{t('common.grand_total')}</td>
+                                            <td colSpan={user?.shop?.country === 'IN' ? 4 : 3} className="px-6 py-4 text-right text-[10px] font-black uppercase tracking-[0.2em] opacity-60">{t('common.grand_total')}</td>
                                             <td className="px-6 py-4 text-right text-lg font-black tabular-nums">{currency} {parseFloat(inv.grand_total).toFixed(2)}</td>
                                         </tr>
                                     </tfoot>
