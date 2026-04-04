@@ -48,10 +48,6 @@ router.get('/announcements', superAdminController.getAnnouncements);
 router.post('/announcements', superAdminController.createAnnouncement);
 router.delete('/announcements/:id', superAdminController.deleteAnnouncement);
 
-const upload = require('../middleware/upload');
-
-// ... (other contents)
-
 // Ads
 router.get('/ads', superAdminController.getAds);
 router.post('/ads', upload.single('image'), superAdminController.createAd);
