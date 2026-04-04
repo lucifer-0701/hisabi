@@ -14,6 +14,8 @@ router.get('/public/ads', async (req, res) => {
     }
 });
 
+router.get('/public/discounts/validate', superAdminController.validateDiscount);
+
 // Public Setup & Auth
 router.get('/setup-status', superAdminController.checkSetupStatus);
 router.post('/initialize', superAdminController.initializeSuperAdmin);
@@ -24,6 +26,7 @@ router.use(authenticateSuperAdmin);
 
 // Analytics & System Stats
 router.get('/analytics', superAdminController.getAnalytics);
+router.get('/analytics/historical', superAdminController.getHistoricalAnalytics);
 router.get('/logs', superAdminController.getActivityLogs);
 
 // Shop Management

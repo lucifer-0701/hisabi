@@ -4,9 +4,33 @@ import {
     Shield, Megaphone as AnnouncementIcon, Ticket, LogOut, Plus, Trash2, Edit2,
     CheckCircle2, XCircle, Layout, Chrome, BarChart2, DollarSign,
     Save, X, Image as ImageIcon, Link as LinkIcon, Calendar,
-    Users, Activity, Store, AlertCircle, Info
+    Users, Activity, Store, AlertCircle, Info, Menu
 } from 'lucide-react';
 import api from '../api/axios';
+
+const AD_TEMPLATES = [
+    {
+        id: 'promo_50_off',
+        title: '50% OFF Subscription',
+        image_url: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=800&q=80',
+        link_url: '/subscription',
+        description: 'Perfect for attracting new users with a heavy discount.'
+    },
+    {
+        id: 'gold_upgrade',
+        title: 'Upgrade to Gold Plan',
+        image_url: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&q=80',
+        link_url: '/subscription',
+        description: 'Promote the middle-tier plan features.'
+    },
+    {
+        id: 'premium_access',
+        title: 'Get Premium Access',
+        image_url: 'https://images.unsplash.com/photo-1614850523296-d8c1af93d400?w=800&q=80',
+        link_url: '/subscription',
+        description: 'Showcase the best features for serious businesses.'
+    }
+];
 
 const SuperAdminDashboard = () => {
     const [view, setView] = useState('analytics'); // analytics, shops, ads, discounts, announcements, logs
@@ -17,6 +41,7 @@ const SuperAdminDashboard = () => {
 
     // Data States
     const [analytics, setAnalytics] = useState({ shops: { total: 0, active: 0 }, usage: { invoices: 0, products: 0 }, revenue: 0 });
+    const [historicalAnalytics, setHistoricalAnalytics] = useState({ shops: [], invoices: [] });
     const [shops, setShops] = useState([]);
     const [ads, setAds] = useState([]);
     const [discounts, setDiscounts] = useState([]);
@@ -24,9 +49,12 @@ const SuperAdminDashboard = () => {
     const [logs, setLogs] = useState([]);
 
     // Form States
-    const [adForm, setAdForm] = useState({ title: '', image_url: '', link_url: '', placement: 'dashboard_banner', active: true });
+    // Form States
+    const [adForm, setAdForm] = useState({ title: '', image_url: '', link_url: '', placement: 'dashboard_banner', active: true, type: 'manual', template_id: '' });
     const [discountForm, setDiscountForm] = useState({ code: '', type: 'percent', value: 0, expires_at: '', active: true });
     const [announcementForm, setAnnouncementForm] = useState({ message: '', type: 'info', active: true });
+    const [logFilter, setLogFilter] = useState('ALL');
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     useEffect(() => {
         const token = localStorage.getItem('superAdminToken');
@@ -61,8 +89,12 @@ const SuperAdminDashboard = () => {
         setLoading(true);
         try {
             if (view === 'analytics') {
-                const res = await api.get('/super-admin/analytics');
+                const [res, hRes] = await Promise.all([
+                    api.get('/super-admin/analytics'),
+                    api.get('/super-admin/analytics/historical')
+                ]);
                 setAnalytics(res.data);
+                setHistoricalAnalytics(hRes.data);
             } else if (view === 'shops') {
                 const res = await api.get('/super-admin/shops');
                 setShops(res.data);
@@ -135,22 +167,22 @@ const SuperAdminDashboard = () => {
     };
 
     const renderAnalytics = () => (
-        <div className="space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="space-y-6 lg:space-y-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6">
                 {[
                     { label: 'Total Revenue', value: `${analytics.revenue.toFixed(2)}`, icon: DollarSign, color: 'text-emerald-600', bg: 'bg-emerald-50' },
                     { label: 'Platform Shops', value: analytics.shops.total, sub: `${analytics.shops.active} active`, icon: Store, color: 'text-blue-600', bg: 'bg-blue-50' },
                     { label: 'Total Invoices', value: analytics.usage.invoices, icon: BarChart2, color: 'text-purple-600', bg: 'bg-purple-50' },
                     { label: 'Product Catalog', value: analytics.usage.products, icon: Layout, color: 'text-orange-600', bg: 'bg-orange-50' },
                 ].map((stat, i) => (
-                    <div key={i} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+                    <div key={i} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md transition-all group">
                         <div className="flex items-center justify-between mb-4">
                             <div className={`p-3 ${stat.bg} ${stat.color} rounded-2xl`}>
-                                <stat.icon className="w-6 h-6" />
+                                <stat.icon className="w-5 h-5 lg:w-6 lg:h-6" />
                             </div>
                         </div>
-                        <h3 className="text-slate-500 text-xs font-black uppercase tracking-widest">{stat.label}</h3>
-                        <p className="text-3xl font-black text-slate-900 mt-1">{stat.value}</p>
+                        <h3 className="text-slate-500 text-[10px] font-black uppercase tracking-widest">{stat.label}</h3>
+                        <p className="text-2xl lg:text-3xl font-black text-slate-900 mt-1">{stat.value}</p>
                         {stat.sub && <p className="text-[10px] font-bold text-slate-400 mt-1">{stat.sub}</p>}
                     </div>
                 ))}
@@ -158,25 +190,38 @@ const SuperAdminDashboard = () => {
 
             <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-8">
                 <h3 className="text-lg font-black text-slate-900 mb-2">Platform Growth</h3>
-                <p className="text-sm font-bold text-slate-500 mb-6">Aggregate metrics across all registered shops.</p>
-                <div className="h-64 flex items-end justify-between gap-4">
-                    {/* Simulated Chart Bars */}
-                    {[40, 70, 45, 90, 65, 80, 55].map((h, i) => (
-                        <div key={i} className="flex-1 bg-slate-50 rounded-t-2xl relative group hover:bg-slate-100 transition-colors">
-                            <div
-                                style={{ height: `${h}%` }}
-                                className="absolute bottom-0 w-full bg-blue-600/20 group-hover:bg-blue-600 rounded-t-2xl transition-all duration-500"
-                            />
+                <p className="text-sm font-bold text-slate-500 mb-6">Daily shop registrations over the last 30 days.</p>
+                <div className="h-64 flex items-end justify-between gap-1 group/chart">
+                    {historicalAnalytics.shops.length > 0 ? (
+                        historicalAnalytics.shops.map((data, i) => {
+                            const maxCount = Math.max(...historicalAnalytics.shops.map(s => parseInt(s.count)), 1);
+                            const height = (parseInt(data.count) / maxCount) * 100;
+                            return (
+                                <div key={i} className="flex-1 bg-slate-50/50 rounded-t-lg relative group transition-all hover:bg-slate-100">
+                                    <div
+                                        style={{ height: `${height}%` }}
+                                        className="absolute bottom-0 w-full bg-blue-600/20 group-hover:bg-blue-600 rounded-t-lg transition-all duration-500"
+                                    />
+                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-slate-900 text-white text-[8px] font-black px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                                        {data.count} Shops ({new Date(data.date).toLocaleDateString()})
+                                    </div>
+                                </div>
+                            );
+                        })
+                    ) : (
+                        <div className="w-full h-full flex items-center justify-center border-2 border-dashed border-slate-100 rounded-3xl">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">No growth data available</p>
                         </div>
-                    ))}
+                    )}
                 </div>
             </div>
         </div>
     );
 
     const renderShops = () => (
-        <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
-            <table className="w-full">
+        <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto custom-scrollbar">
+                <table className="w-full text-left border-collapse min-w-[800px]">
                 <thead>
                     <tr className="bg-slate-50 border-b border-slate-100">
                         <th className="px-6 py-4 text-left text-[10px] font-black text-slate-500 uppercase tracking-widest">Shop Name</th>
@@ -240,53 +285,116 @@ const SuperAdminDashboard = () => {
                 </tbody>
             </table>
         </div>
-    );
+    </div>
+);
 
-    const renderLogs = () => (
-        <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
-            <div className="p-6 border-b border-slate-50">
-                <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight flex items-center gap-2">
-                    <Activity className="w-4 h-4 text-blue-600" /> Recent Admin Actions
-                </h3>
-            </div>
-            <div className="divide-y divide-slate-50 max-h-[600px] overflow-y-auto">
-                {logs.map(log => (
-                    <div key={log.id} className="p-4 flex gap-4 hover:bg-slate-50 transition-colors">
-                        <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center shrink-0">
-                            <Shield className="w-5 h-5 text-slate-400" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between mb-0.5">
-                                <p className="text-xs font-black text-slate-900 uppercase tracking-wide">{log.action}</p>
-                                <p className="text-[10px] font-bold text-slate-400">{new Date(log.created_at).toLocaleString()}</p>
-                            </div>
-                            <p className="text-xs font-bold text-slate-500 truncate">
-                                {log.admin_username} performed action
-                            </p>
-                            {log.details && (
-                                <div className="mt-2 text-[10px] bg-slate-50 p-2 rounded-lg font-mono text-slate-600">
-                                    {JSON.stringify(log.details)}
-                                </div>
-                            )}
-                        </div>
+    const renderLogs = () => {
+        const filteredLogs = logFilter === 'ALL' ? logs : logs.filter(log => log.category === logFilter);
+        const categories = [
+            { id: 'ALL', label: 'All Activity', icon: Activity, color: 'text-slate-600', bg: 'bg-slate-100' },
+            { id: 'AUTH', label: 'Security/Auth', icon: Shield, color: 'text-blue-600', bg: 'bg-blue-100' },
+            { id: 'SHOP_MGMT', label: 'Shop Control', icon: Store, color: 'text-emerald-600', bg: 'bg-emerald-100' },
+            { id: 'AD_MGMT', label: 'Ad Engine', icon: Layout, color: 'text-purple-600', bg: 'bg-purple-100' },
+            { id: 'DISCOUNT_MGMT', label: 'Tier Codes', icon: Ticket, color: 'text-amber-600', bg: 'bg-amber-100' },
+            { id: 'SYSTEM', label: 'System', icon: Shield, color: 'text-rose-600', bg: 'bg-rose-100' }
+        ];
+
+        return (
+            <div className="space-y-6">
+                <div className="flex flex-wrap gap-2">
+                    {categories.map(cat => (
+                        <button
+                            key={cat.id}
+                            onClick={() => setLogFilter(cat.id)}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all
+                                ${logFilter === cat.id ? 'bg-slate-900 text-white shadow-lg' : 'bg-white text-slate-500 border border-slate-100 hover:border-slate-300'}
+                            `}
+                        >
+                            <cat.icon className="w-3.5 h-3.5" /> {cat.label}
+                        </button>
+                    ))}
+                </div>
+
+                <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden min-h-[400px]">
+                    <div className="p-8 border-b border-slate-50 flex items-center justify-between">
+                        <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight flex items-center gap-2">
+                            <Activity className="w-4 h-4 text-blue-600" /> Administrative Audit Trail
+                        </h3>
+                        <p className="text-[10px] font-bold text-slate-400">{filteredLogs.length} events found</p>
                     </div>
-                ))}
+                    <div className="divide-y divide-slate-50 max-h-[800px] overflow-y-auto custom-scrollbar">
+                        {filteredLogs.length > 0 ? (
+                            filteredLogs.map(log => {
+                                const cat = categories.find(c => c.id === log.category) || categories[categories.length - 1];
+                                return (
+                                    <div key={log.id} className="p-6 flex gap-6 hover:bg-slate-50/50 transition-colors group">
+                                        <div className={`w-12 h-12 ${cat.bg} ${cat.color} rounded-2xl flex items-center justify-center shrink-0 shadow-inner`}>
+                                            <cat.icon className="w-6 h-6" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center justify-between mb-1">
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full ${cat.bg} ${cat.color} tracking-widest`}>
+                                                        {cat.id}
+                                                    </span>
+                                                    <p className="text-sm font-black text-slate-900 uppercase tracking-tight">{log.action}</p>
+                                                </div>
+                                                <p className="text-[10px] font-bold text-slate-400 group-hover:text-slate-600 transition-colors">{new Date(log.created_at).toLocaleString()}</p>
+                                            </div>
+                                            <p className="text-xs font-bold text-slate-500 mb-4 pb-2 border-b border-slate-50/50">
+                                                Executed by <span className="text-slate-900 italic font-black font-serif underline decoration-blue-500/20 underline-offset-2">{log.admin_username}</span>
+                                            </p>
+                                            {log.details && Object.keys(log.details).length > 0 && (
+                                                <div className="bg-slate-50 border border-slate-100 p-4 rounded-xl font-mono text-[10px] text-slate-600 overflow-x-auto">
+                                                    <pre className="whitespace-pre-wrap">{JSON.stringify(log.details, null, 2)}</pre>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        ) : (
+                            <div className="p-20 text-center flex flex-col items-center gap-4">
+                                <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center">
+                                    <Activity className="w-8 h-8 text-slate-200" />
+                                </div>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">No matching activities logged.</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
             </div>
-        </div>
-    );
+        );
+    };
 
     return (
         <div className="min-h-screen bg-slate-50 flex">
+            {/* Mobile Overlay */}
+            {isSidebarOpen && (
+                <div 
+                    className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-30 lg:hidden animate-in fade-in duration-300"
+                    onClick={() => setIsSidebarOpen(false)}
+                />
+            )}
+
             {/* Sidebar */}
-            <aside className="w-64 bg-slate-900 text-white flex flex-col fixed inset-y-0 z-20">
-                <div className="p-6 flex items-center gap-3 border-b border-slate-800">
-                    <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/20">
-                        <Shield className="w-5 h-5 text-white" />
+            <aside className={`w-64 bg-slate-900 text-white flex flex-col fixed inset-y-0 z-40 transition-transform duration-300 lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+                <div className="p-6 flex items-center justify-between border-b border-slate-800">
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/20">
+                            <Shield className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                            <p className="text-sm font-black tracking-tight">Super Admin</p>
+                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Management</p>
+                        </div>
                     </div>
-                    <div>
-                        <p className="text-sm font-black tracking-tight">Super Admin</p>
-                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Management</p>
-                    </div>
+                    <button 
+                        onClick={() => setIsSidebarOpen(false)}
+                        className="lg:hidden p-2 text-slate-400 hover:text-white"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
                 </div>
 
                 <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto custom-scrollbar">
@@ -300,7 +408,7 @@ const SuperAdminDashboard = () => {
                     ].map(item => (
                         <button
                             key={item.id}
-                            onClick={() => setView(item.id)}
+                            onClick={() => { setView(item.id); setIsSidebarOpen(false); }}
                             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-black transition-all group ${view === item.id ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
                         >
                             <item.icon className={`w-4 h-4 ${view === item.id ? 'text-white' : 'text-slate-500 group-hover:text-blue-400'}`} /> {item.label}
@@ -319,29 +427,39 @@ const SuperAdminDashboard = () => {
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 pl-64 overflow-y-auto min-h-screen">
-                <header className="bg-white/80 backdrop-blur-md border-b border-slate-100 h-16 flex items-center justify-between px-8 sticky top-0 z-10">
-                    <h2 className="text-xs font-black text-slate-900 uppercase tracking-[0.2em]">
-                        {view} portal
-                    </h2>
-
-                    {['ads', 'discounts', 'announcements'].includes(view) && (
-                        <button
-                            onClick={() => {
-                                setEditItem(null);
-                                if (view === 'ads') setAdForm({ title: '', image_url: '', link_url: '', placement: 'dashboard_banner', active: true });
-                                if (view === 'discounts') setDiscountForm({ code: '', type: 'percent', value: 0, expires_at: '', active: true });
-                                if (view === 'announcements') setAnnouncementForm({ message: '', type: 'info', active: true });
-                                setIsModalOpen(true);
-                            }}
-                            className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider shadow-md shadow-blue-500/20 flex items-center gap-2 transition-all active:scale-95"
+            <main className="flex-1 lg:pl-64 overflow-y-auto min-h-screen">
+                <header className="bg-white/80 backdrop-blur-md border-b border-slate-100 h-16 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-20">
+                    <div className="flex items-center gap-4">
+                        <button 
+                            onClick={() => setIsSidebarOpen(true)}
+                            className="lg:hidden p-2 bg-slate-50 text-slate-600 rounded-xl hover:bg-slate-100 transition-colors"
                         >
-                            <Plus className="w-3.5 h-3.5" /> Create New
+                            <Menu className="w-5 h-5" />
                         </button>
-                    )}
+                        <h2 className="text-[10px] lg:text-xs font-black text-slate-900 uppercase tracking-[0.2em] line-clamp-1">
+                            {view} portal
+                        </h2>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        {['ads', 'discounts', 'announcements'].includes(view) && (
+                            <button
+                                onClick={() => {
+                                    setEditItem(null);
+                                    if (view === 'ads') setAdForm({ title: '', image_url: '', link_url: '', placement: 'dashboard_banner', active: true, type: 'manual', template_id: '' });
+                                    if (view === 'discounts') setDiscountForm({ code: '', type: 'percent', value: 0, expires_at: '', active: true });
+                                    if (view === 'announcements') setAnnouncementForm({ message: '', type: 'info', active: true });
+                                    setIsModalOpen(true);
+                                }}
+                                className="bg-blue-600 hover:bg-blue-500 text-white px-3 lg:px-4 py-2 rounded-xl text-[9px] lg:text-[10px] font-black uppercase tracking-wider shadow-md shadow-blue-500/20 flex items-center gap-2 transition-all active:scale-95 whitespace-nowrap"
+                            >
+                                <Plus className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Create New</span><span className="sm:hidden">New</span>
+                            </button>
+                        )}
+                    </div>
                 </header>
 
-                <div className="p-8">
+                <div className="p-4 lg:p-8">
                     {loading ? (
                         <div className="flex flex-col items-center justify-center py-40 gap-4">
                             <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
@@ -415,8 +533,9 @@ const SuperAdminDashboard = () => {
                             )}
 
                             {view === 'discounts' && (
-                                <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
-                                    <table className="w-full">
+                                <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+                                    <div className="overflow-x-auto custom-scrollbar">
+                                        <table className="w-full text-left border-collapse min-w-[600px]">
                                         <thead>
                                             <tr className="bg-slate-50 border-b border-slate-100">
                                                 <th className="px-6 py-4 text-left text-[10px] font-black text-slate-500 uppercase tracking-widest">Code</th>
@@ -439,7 +558,8 @@ const SuperAdminDashboard = () => {
                                         </tbody>
                                     </table>
                                 </div>
-                            )}
+                            </div>
+                        )}
                         </>
                     )}
                 </div>
@@ -457,18 +577,69 @@ const SuperAdminDashboard = () => {
 
                         <form onSubmit={handleSubmit} className="p-8 space-y-6">
                             {view === 'ads' && (
-                                <div className="space-y-4">
-                                    <div className="space-y-1.5">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Campaign Title</label>
-                                        <input type="text" required value={adForm.title} onChange={e => setAdForm({ ...adForm, title: e.target.value })} className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-4 text-sm font-bold focus:border-blue-500 outline-none" placeholder="Summer Growth Pack..." />
+                                <div className="space-y-6">
+                                    <div className="flex bg-slate-100 p-1 rounded-2xl w-fit">
+                                        <button 
+                                            type="button"
+                                            onClick={() => setAdForm({ ...adForm, type: 'manual' })}
+                                            className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase transition-all ${adForm.type === 'manual' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
+                                        >
+                                            Manual Asset
+                                        </button>
+                                        <button 
+                                            type="button"
+                                            onClick={() => setAdForm({ ...adForm, type: 'promotional' })}
+                                            className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase transition-all ${adForm.type === 'promotional' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
+                                        >
+                                            Promo Templates
+                                        </button>
                                     </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 flex items-center gap-1.5"><ImageIcon className="w-3 h-3" /> Asset URL</label>
-                                        <input type="text" required value={adForm.image_url} onChange={e => setAdForm({ ...adForm, image_url: e.target.value })} className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-4 text-sm font-bold focus:border-blue-500 outline-none" placeholder="https://..." />
-                                    </div>
+
+                                    {adForm.type === 'manual' ? (
+                                        <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
+                                            <div className="space-y-1.5">
+                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Campaign Title</label>
+                                                <input type="text" required value={adForm.title} onChange={e => setAdForm({ ...adForm, title: e.target.value })} className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-4 text-sm font-bold focus:border-blue-500 outline-none" placeholder="Summer Growth Pack..." />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 flex items-center gap-1.5"><ImageIcon className="w-3 h-3" /> Asset URL</label>
+                                                <input type="text" required value={adForm.image_url} onChange={e => setAdForm({ ...adForm, image_url: e.target.value })} className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-4 text-sm font-bold focus:border-blue-500 outline-none" placeholder="https://..." />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Action Link (Optional)</label>
+                                                <input type="text" value={adForm.link_url} onChange={e => setAdForm({ ...adForm, link_url: e.target.value })} className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-4 text-sm font-bold focus:border-blue-500 outline-none" placeholder="https://..." />
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-1 gap-3 animate-in fade-in slide-in-from-top-2">
+                                            {AD_TEMPLATES.map(template => (
+                                                <button
+                                                    key={template.id}
+                                                    type="button"
+                                                    onClick={() => setAdForm({ 
+                                                        ...adForm, 
+                                                        template_id: template.id,
+                                                        title: template.title,
+                                                        image_url: template.image_url,
+                                                        link_url: template.link_url
+                                                    })}
+                                                    className={`p-4 rounded-3xl border-2 text-left transition-all flex items-center gap-4 ${adForm.template_id === template.id ? 'border-blue-600 bg-blue-50' : 'border-slate-100 hover:border-blue-200'}`}
+                                                >
+                                                    <div className="w-16 h-12 bg-slate-200 rounded-xl overflow-hidden shrink-0">
+                                                        <img src={template.image_url} alt="" className="w-full h-full object-cover" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-black text-slate-900">{template.title}</p>
+                                                        <p className="text-[10px] font-bold text-slate-500">{template.description}</p>
+                                                    </div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+
                                     <div className="space-y-1.5">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Placement Area</label>
-                                        <select value={adForm.placement} onChange={e => setAdForm({ ...adForm, placement: e.target.value })} className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-4 text-sm font-black focus:border-blue-500 outline-none appearance-none">
+                                        <select value={adForm.placement} onChange={e => setAdForm({ ...adForm, placement: e.target.value })} className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-4 text-sm font-black focus:border-blue-500 outline-none appearance-none cursor-pointer">
                                             <option value="dashboard_banner">Dashboard Main</option>
                                             <option value="billing_banner">Billing & Invoices</option>
                                             <option value="reports_banner">Advanced Reports</option>

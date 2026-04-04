@@ -62,25 +62,10 @@ const deleteCode = async (req, res) => {
 const validateCode = async (req, res) => {
     try {
         const { code, order_total } = req.body;
-        const dc = await DiscountCode.findOne({
-            where: {
-                shop_id: req.user.shop_id,
-                code: code.toUpperCase(),
-                active: true,
-                [Op.or]: [{ expires_at: null }, { expires_at: { [Op.gte]: new Date() } }]
-            }
-        });
-        if (!dc) return res.status(404).json({ error: 'Invalid or expired code' });
-        if (dc.max_uses && dc.used_count >= dc.max_uses) return res.status(400).json({ error: 'Code usage limit reached' });
-        if (order_total < dc.min_order_amount) return res.status(400).json({ error: `Minimum order amount is ${dc.min_order_amount}` });
-
-        const discount_amount = dc.type === 'percent'
-            ? (order_total * dc.value / 100)
-            : dc.value;
-
-        res.json({ valid: true, discount_amount: Math.min(discount_amount, order_total), code: dc });
+        const result = await DiscountCode.validate(code, req.user.shop_id, parseFloat(order_total || 0));
+        res.json(result);
     } catch (err) {
-        res.status(500).json({ error: 'Validation failed' });
+        res.status(400).json({ error: err.message });
     }
 };
 

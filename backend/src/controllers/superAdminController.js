@@ -2,15 +2,17 @@ const {
     SuperAdmin, Advertisement, DiscountCode, sequelize,
     Shop, User, Product, Invoice, Announcement, ActivityLog
 } = require('../../../database/models');
+const { Op } = require('sequelize');
 const { hashPassword, comparePassword } = require('../utils/hash');
 const { generateToken } = require('../utils/token');
 
 // Helper for Activity Logging
-const logActivity = async (adminUsername, action, details = {}) => {
+const logActivity = async (adminUsername, action, category = 'SYSTEM', details = {}) => {
     try {
         await ActivityLog.create({
             admin_username: adminUsername,
             action,
+            category,
             details
         });
     } catch (error) {
@@ -45,7 +47,7 @@ const login = async (req, res) => {
 
         const token = generateToken({ id: admin.id, role: 'super-admin', username: admin.username });
 
-        await logActivity(admin.username, 'LOGIN', { ip: req.ip });
+        await logActivity(admin.username, 'LOGIN', 'AUTH', { ip: req.ip });
 
         res.json({
             message: 'Super Admin login successful',
@@ -131,6 +133,45 @@ const getAnalytics = async (req, res) => {
     }
 };
 
+const getHistoricalAnalytics = async (req, res) => {
+    try {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+        const shopGrowth = await Shop.findAll({
+            attributes: [
+                [sequelize.fn('DATE', sequelize.col('created_at')), 'date'],
+                [sequelize.fn('COUNT', sequelize.col('id')), 'count']
+            ],
+            where: {
+                created_at: { [Op.gte]: thirtyDaysAgo }
+            },
+            group: [sequelize.fn('DATE', sequelize.col('created_at'))],
+            order: [[sequelize.fn('DATE', sequelize.col('created_at')), 'ASC']]
+        });
+
+        const invoiceGrowth = await Invoice.findAll({
+            attributes: [
+                [sequelize.fn('DATE', sequelize.col('created_at')), 'date'],
+                [sequelize.fn('COUNT', sequelize.col('id')), 'count']
+            ],
+            where: {
+                created_at: { [Op.gte]: thirtyDaysAgo }
+            },
+            group: [sequelize.fn('DATE', sequelize.col('created_at'))],
+            order: [[sequelize.fn('DATE', sequelize.col('created_at')), 'ASC']]
+        });
+
+        res.json({
+            shops: shopGrowth,
+            invoices: invoiceGrowth
+        });
+    } catch (error) {
+        console.error('Historical analytics error:', error);
+        res.status(500).json({ error: 'Failed to fetch historical analytics' });
+    }
+};
+
 // 2. Shop Management
 const getAllShops = async (req, res) => {
     try {
@@ -164,7 +205,7 @@ const updateShop = async (req, res) => {
         console.log(`[SuperAdmin] Updating shop ${id}:`, updateData);
         await shop.update(updateData);
 
-        await logActivity(req.superAdmin.username, 'UPDATE_SHOP', {
+        await logActivity(req.superAdmin.username, 'UPDATE_SHOP', 'SHOP_MGMT', {
             shopId: id, shopName: shop.name, changes: updateData
         });
 
@@ -187,7 +228,7 @@ const getAnnouncements = async (req, res) => {
 const createAnnouncement = async (req, res) => {
     try {
         const announcement = await Announcement.create(req.body);
-        await logActivity(req.superAdmin.username, 'CREATE_ANNOUNCEMENT', { id: announcement.id });
+        await logActivity(req.superAdmin.username, 'CREATE_ANNOUNCEMENT', 'SYSTEM', { id: announcement.id });
         res.status(201).json(announcement);
     } catch (error) {
         res.status(500).json({ error: 'Failed to create announcement' });
@@ -198,7 +239,7 @@ const deleteAnnouncement = async (req, res) => {
     try {
         const { id } = req.params;
         await Announcement.destroy({ where: { id } });
-        await logActivity(req.superAdmin.username, 'DELETE_ANNOUNCEMENT', { id });
+        await logActivity(req.superAdmin.username, 'DELETE_ANNOUNCEMENT', 'SYSTEM', { id });
         res.json({ message: 'Announcement deleted' });
     } catch (error) {
         res.status(500).json({ error: 'Failed' });
@@ -231,7 +272,7 @@ const getAds = async (req, res) => {
 const createAd = async (req, res) => {
     try {
         const ad = await Advertisement.create(req.body);
-        await logActivity(req.superAdmin.username, 'CREATE_AD', { id: ad.id });
+        await logActivity(req.superAdmin.username, 'CREATE_AD', 'AD_MGMT', { id: ad.id });
         res.status(201).json(ad);
     } catch (error) {
         res.status(500).json({ error: 'Failed' });
@@ -244,7 +285,7 @@ const updateAd = async (req, res) => {
         const ad = await Advertisement.findByPk(id);
         if (!ad) return res.status(404).json({ error: 'Not found' });
         await ad.update(req.body);
-        await logActivity(req.superAdmin.username, 'UPDATE_AD', { id });
+        await logActivity(req.superAdmin.username, 'UPDATE_AD', 'AD_MGMT', { id });
         res.json(ad);
     } catch (error) {
         res.status(500).json({ error: 'Failed' });
@@ -255,7 +296,7 @@ const deleteAd = async (req, res) => {
     try {
         const { id } = req.params;
         await Advertisement.destroy({ where: { id } });
-        await logActivity(req.superAdmin.username, 'DELETE_AD', { id });
+        await logActivity(req.superAdmin.username, 'DELETE_AD', 'AD_MGMT', { id });
         res.json({ message: 'Deleted' });
     } catch (error) {
         res.status(500).json({ error: 'Failed' });
@@ -264,17 +305,29 @@ const deleteAd = async (req, res) => {
 
 const getDiscounts = async (req, res) => {
     try {
-        const discounts = await DiscountCode.findAll({ where: { shop_id: null } });
+        const discounts = await DiscountCode.findAll({ where: { shop_id: null }, order: [['created_at', 'DESC']] });
         res.json(discounts);
     } catch (error) {
         res.status(500).json({ error: 'Failed' });
     }
 };
 
+const validateDiscount = async (req, res) => {
+    try {
+        const { code, amount } = req.query; // Use query for GET
+        if (!code) return res.status(400).json({ error: 'Code is required' });
+        
+        const result = await DiscountCode.validate(code, null, parseFloat(amount || 0));
+        res.json(result);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+};
+
 const createDiscount = async (req, res) => {
     try {
         const discount = await DiscountCode.create({ ...req.body, shop_id: null });
-        await logActivity(req.superAdmin.username, 'CREATE_PLATFORM_DISCOUNT', { code: discount.code });
+        await logActivity(req.superAdmin.username, 'CREATE_PLATFORM_DISCOUNT', 'DISCOUNT_MGMT', { code: discount.code });
         res.status(201).json(discount);
     } catch (error) {
         res.status(500).json({ error: 'Failed' });
@@ -287,7 +340,7 @@ const updateDiscount = async (req, res) => {
         const d = await DiscountCode.findOne({ where: { id, shop_id: null } });
         if (!d) return res.status(404).json({ error: 'Not found' });
         await d.update(req.body);
-        await logActivity(req.superAdmin.username, 'UPDATE_PLATFORM_DISCOUNT', { code: d.code });
+        await logActivity(req.superAdmin.username, 'UPDATE_PLATFORM_DISCOUNT', 'DISCOUNT_MGMT', { code: d.code });
         res.json(d);
     } catch (error) {
         res.status(500).json({ error: 'Failed' });
@@ -298,7 +351,7 @@ const deleteDiscount = async (req, res) => {
     try {
         const { id } = req.params;
         await DiscountCode.destroy({ where: { id, shop_id: null } });
-        await logActivity(req.superAdmin.username, 'DELETE_PLATFORM_DISCOUNT', { id });
+        await logActivity(req.superAdmin.username, 'DELETE_PLATFORM_DISCOUNT', 'DISCOUNT_MGMT', { id });
         res.json({ message: 'Deleted' });
     } catch (error) {
         res.status(500).json({ error: 'Failed' });
@@ -307,9 +360,9 @@ const deleteDiscount = async (req, res) => {
 
 module.exports = {
     login, checkSetupStatus, initializeSuperAdmin,
-    getAnalytics, getAllShops, updateShop,
+    getAnalytics, getHistoricalAnalytics, getAllShops, updateShop,
     getAnnouncements, createAnnouncement, deleteAnnouncement,
     getActivityLogs,
     getAds, createAd, updateAd, deleteAd,
-    getDiscounts, createDiscount, updateDiscount, deleteDiscount
+    getDiscounts, createDiscount, updateDiscount, deleteDiscount, validateDiscount
 };

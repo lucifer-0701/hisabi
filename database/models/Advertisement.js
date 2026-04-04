@@ -19,6 +19,15 @@ const Advertisement = sequelize.define('Advertisement', {
         type: DataTypes.STRING(500),
         allowNull: true
     },
+    type: {
+        type: DataTypes.ENUM('manual', 'promotional'),
+        allowNull: false,
+        defaultValue: 'manual'
+    },
+    template_id: {
+        type: DataTypes.STRING(100),
+        allowNull: true
+    },
     placement: {
         type: DataTypes.ENUM('dashboard_banner', 'billing_banner', 'reports_banner'),
         allowNull: false

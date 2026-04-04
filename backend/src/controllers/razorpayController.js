@@ -42,26 +42,13 @@ const createOrder = async (req, res) => {
 
         // Apply Discount Code if provided
         if (discount_code) {
-            const discount = await DiscountCode.findOne({
-                where: { code: discount_code, shop_id: null, active: true }
-            });
-
-            if (!discount) {
+            try {
+                const result = await DiscountCode.validate(discount_code, null, baseAmount / 100); // baseAmount is in paise
+                discountAmount = result.discount_amount * 100;
+                baseAmount = Math.max(0, baseAmount - discountAmount);
+            } catch (err) {
                 return res.status(400).json({ error: 'Invalid Discount Code' });
             }
-
-            // Check expiry
-            if (discount.expires_at && new Date(discount.expires_at) < new Date()) {
-                return res.status(400).json({ error: 'Invalid Discount Code' }); // Requirement says "Invalid Discount Code"
-            }
-
-            if (discount.type === 'percent') {
-                discountAmount = Math.round(baseAmount * (discount.value / 100));
-            } else {
-                discountAmount = Math.round(discount.value * 100); // fixed amount to paise
-            }
-
-            baseAmount = Math.max(0, baseAmount - discountAmount);
         }
 
         const platformFee = Math.round(baseAmount * PLATFORM_FEE_RATE);

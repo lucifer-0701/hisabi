@@ -15,6 +15,11 @@ const ActivityLog = sequelize.define('ActivityLog', {
         type: DataTypes.STRING(255),
         allowNull: false
     },
+    category: {
+        type: DataTypes.ENUM('AUTH', 'SHOP_MGMT', 'AD_MGMT', 'DISCOUNT_MGMT', 'SYSTEM'),
+        allowNull: false,
+        defaultValue: 'SYSTEM'
+    },
     details: {
         type: DataTypes.JSONB,
         allowNull: true

@@ -11,9 +11,33 @@ const DiscountCode = sequelize.define('DiscountCode', {
     max_uses: { type: DataTypes.INTEGER, allowNull: true },
     used_count: { type: DataTypes.INTEGER, defaultValue: 0 },
     active: { type: DataTypes.BOOLEAN, defaultValue: true },
-    expires_at: { type: DataTypes.DATE, allowNull: true }
 }, { tableName: 'discount_codes', timestamps: true, createdAt: 'created_at', updatedAt: false });
 
-// Associations defined centrally in models/index.js
+// Static validation method
+DiscountCode.validate = async function(code, shop_id = null, order_total = 0) {
+    const { Op } = require('sequelize');
+    const dc = await this.findOne({
+        where: {
+            shop_id,
+            code: code.toUpperCase(),
+            active: true,
+            [Op.or]: [{ expires_at: null }, { expires_at: { [Op.gte]: new Date() } }]
+        }
+    });
+
+    if (!dc) throw new Error('Invalid or expired code');
+    if (dc.max_uses && dc.used_count >= dc.max_uses) throw new Error('Code usage limit reached');
+    if (order_total < parseFloat(dc.min_order_amount)) throw new Error(`Minimum order amount is ${dc.min_order_amount}`);
+
+    const discount_amount = dc.type === 'percent'
+        ? (order_total * parseFloat(dc.value) / 100)
+        : parseFloat(dc.value);
+
+    return { 
+        valid: true, 
+        discount_amount: Math.min(discount_amount, order_total), 
+        code: dc 
+    };
+};
 
 module.exports = DiscountCode;
