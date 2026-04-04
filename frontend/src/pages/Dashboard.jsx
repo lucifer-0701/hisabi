@@ -64,6 +64,8 @@ const Dashboard = () => {
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [ads, setAds] = useState([]);
+    const [announcements, setAnnouncements] = useState([]);
+    const [dismissedAds, setDismissedAds] = useState([]);
     const [targetData, setTargetData] = useState(null);
     const [dashError, setDashError] = useState(null);
     const [showPricing, setShowPricing] = useState(false);
@@ -73,7 +75,18 @@ const Dashboard = () => {
     useEffect(() => {
         fetchAll();
         fetchAds();
+        fetchAnnouncements();
+        // Load dismissed announcements from local storage
+        const dismissed = JSON.parse(localStorage.getItem('dismissed_announcements') || '[]');
+        setDismissedAds(dismissed);
     }, []);
+
+    const fetchAnnouncements = async () => {
+        try {
+            const res = await api.get('/super-admin/public/announcements');
+            setAnnouncements(res.data);
+        } catch (err) { }
+    };
 
     const fetchAds = async () => {
         try {
@@ -248,8 +261,53 @@ const Dashboard = () => {
         navigate('/login');
     };
 
+    const handleDismiss = (id) => {
+        const newDismissed = [...dismissedAds, id];
+        setDismissedAds(newDismissed);
+        localStorage.setItem('dismissed_announcements', JSON.stringify(newDismissed));
+    };
+
+    const activeAnnouncements = announcements.filter(a => !dismissedAds.includes(a.id));
+
     return (
         <div className="space-y-8 animate-fade-in">
+            {/* ── Announcements ── */}
+            {activeAnnouncements.length > 0 && (
+                <div className="space-y-3">
+                    {activeAnnouncements.map((ann) => (
+                        <div key={ann.id} className={`relative overflow-hidden rounded-2xl border p-4 flex items-start gap-4 transition-all animate-in slide-in-from-top-4 ${
+                            ann.type === 'warning' ? 'bg-amber-50 border-amber-100' :
+                            ann.type === 'danger' ? 'bg-red-50 border-red-100' :
+                            ann.type === 'success' ? 'bg-emerald-50 border-emerald-100' :
+                            'bg-blue-50 border-blue-100'
+                        }`}>
+                            <div className={`p-2 rounded-xl shrink-0 ${
+                                ann.type === 'warning' ? 'bg-amber-100 text-amber-600' :
+                                ann.type === 'danger' ? 'bg-red-100 text-red-600' :
+                                ann.type === 'success' ? 'bg-emerald-100 text-emerald-600' :
+                                'bg-blue-100 text-blue-600'
+                            }`}>
+                                <AlertTriangle className="w-5 h-5" />
+                            </div>
+                            <div className="flex-1 min-w-0 pr-8">
+                                {ann.title && <h3 className="text-sm font-black text-slate-900 mb-0.5">{ann.title}</h3>}
+                                <p className="text-xs font-medium text-slate-600 leading-relaxed">{ann.message}</p>
+                                {ann.cta_link && (
+                                    <a href={ann.cta_link} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-blue-600 hover:text-blue-700">
+                                        {ann.cta_text || 'Learn More'} <ChevronRight className="w-3 h-3" />
+                                    </a>
+                                )}
+                            </div>
+                            <button 
+                                onClick={() => handleDismiss(ann.id)}
+                                className="absolute top-4 right-4 p-1 rounded-lg hover:bg-black/5 text-slate-400 transition-colors"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            )}
             {/* ── Hero ── */}
             <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-8 py-10 text-white">
                 {/* decorative blobs */}

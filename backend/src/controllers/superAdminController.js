@@ -227,7 +227,10 @@ const getAnnouncements = async (req, res) => {
 
 const createAnnouncement = async (req, res) => {
     try {
-        const announcement = await Announcement.create(req.body);
+        const { message, title, cta_link, cta_text, type, active, expires_at } = req.body;
+        const announcement = await Announcement.create({
+            message, title, cta_link, cta_text, type, active, expires_at
+        });
         await logActivity(req.superAdmin.username, 'CREATE_ANNOUNCEMENT', 'SYSTEM', { id: announcement.id });
         res.status(201).json(announcement);
     } catch (error) {
@@ -271,10 +274,15 @@ const getAds = async (req, res) => {
 
 const createAd = async (req, res) => {
     try {
-        const ad = await Advertisement.create(req.body);
+        const adData = { ...req.body };
+        if (req.file) {
+            adData.image_url = `/uploads/${req.file.filename}`;
+        }
+        const ad = await Advertisement.create(adData);
         await logActivity(req.superAdmin.username, 'CREATE_AD', 'AD_MGMT', { id: ad.id });
         res.status(201).json(ad);
     } catch (error) {
+        console.error('Create ad error:', error);
         res.status(500).json({ error: 'Failed' });
     }
 };
@@ -284,7 +292,13 @@ const updateAd = async (req, res) => {
         const { id } = req.params;
         const ad = await Advertisement.findByPk(id);
         if (!ad) return res.status(404).json({ error: 'Not found' });
-        await ad.update(req.body);
+        
+        const updateData = { ...req.body };
+        if (req.file) {
+            updateData.image_url = `/uploads/${req.file.filename}`;
+        }
+        
+        await ad.update(updateData);
         await logActivity(req.superAdmin.username, 'UPDATE_AD', 'AD_MGMT', { id });
         res.json(ad);
     } catch (error) {
@@ -326,7 +340,11 @@ const validateDiscount = async (req, res) => {
 
 const createDiscount = async (req, res) => {
     try {
-        const discount = await DiscountCode.create({ ...req.body, shop_id: null });
+        const { code, type, value, min_order_amount, max_uses, expires_at, active } = req.body;
+        const discount = await DiscountCode.create({
+            code, type, value, min_order_amount, max_uses, expires_at, active,
+            shop_id: null
+        });
         await logActivity(req.superAdmin.username, 'CREATE_PLATFORM_DISCOUNT', 'DISCOUNT_MGMT', { code: discount.code });
         res.status(201).json(discount);
     } catch (error) {
@@ -337,9 +355,13 @@ const createDiscount = async (req, res) => {
 const updateDiscount = async (req, res) => {
     try {
         const { id } = req.params;
+        const { code, type, value, min_order_amount, max_uses, expires_at, active } = req.body;
         const d = await DiscountCode.findOne({ where: { id, shop_id: null } });
         if (!d) return res.status(404).json({ error: 'Not found' });
-        await d.update(req.body);
+        
+        await d.update({
+            code, type, value, min_order_amount, max_uses, expires_at, active
+        });
         await logActivity(req.superAdmin.username, 'UPDATE_PLATFORM_DISCOUNT', 'DISCOUNT_MGMT', { code: d.code });
         res.json(d);
     } catch (error) {

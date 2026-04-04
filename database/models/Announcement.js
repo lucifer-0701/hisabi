@@ -7,9 +7,21 @@ const Announcement = sequelize.define('Announcement', {
         defaultValue: DataTypes.UUIDV4,
         primaryKey: true
     },
+    title: {
+        type: DataTypes.STRING(100),
+        allowNull: true
+    },
     message: {
         type: DataTypes.TEXT,
         allowNull: false
+    },
+    cta_link: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
+    cta_text: {
+        type: DataTypes.STRING(50),
+        allowNull: true
     },
     type: {
         type: DataTypes.ENUM('info', 'warning', 'danger', 'success'),

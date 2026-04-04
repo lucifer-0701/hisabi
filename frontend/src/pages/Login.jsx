@@ -317,12 +317,14 @@ const Login = () => {
                                     </div>
                                 )}
                                 {isIndia && (
-                                    <div className="p-4 bg-orange-50 rounded-2xl border border-orange-100">
-                                        <div className="flex items-center gap-2">
-                                            <Percent className="w-4 h-4 text-orange-500" />
-                                            <span className="text-sm font-black text-gray-900">GST 18% Auto-Applied</span>
+                                    <div className="p-4 bg-orange-50 rounded-2xl border border-orange-100 flex items-center gap-3">
+                                        <div className="w-8 h-8 bg-orange-100 rounded-xl flex items-center justify-center text-orange-600">
+                                            <Percent className="w-4 h-4" />
                                         </div>
-                                        <p className="text-xs font-medium text-orange-600/80 mt-1">Indian businesses are subject to 18% GST on subscriptions.</p>
+                                        <div>
+                                            <p className="text-sm font-bold text-gray-900 leading-none">Platform Fee</p>
+                                            <p className="text-xs font-medium text-orange-600/80 mt-1">Prices include a 2% platform fee.</p>
+                                        </div>
                                     </div>
                                 )}
                             </div>

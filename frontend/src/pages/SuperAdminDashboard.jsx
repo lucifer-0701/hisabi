@@ -6,7 +6,7 @@ import {
     Save, X, Image as ImageIcon, Link as LinkIcon, Calendar,
     Users, Activity, Store, AlertCircle, Info, Menu
 } from 'lucide-react';
-import api from '../api/axios';
+import api, { IMAGE_BASE_URL } from '../api/axios';
 
 const AD_TEMPLATES = [
     {
@@ -51,8 +51,10 @@ const SuperAdminDashboard = () => {
     // Form States
     // Form States
     const [adForm, setAdForm] = useState({ title: '', image_url: '', link_url: '', placement: 'dashboard_banner', active: true, type: 'manual', template_id: '' });
-    const [discountForm, setDiscountForm] = useState({ code: '', type: 'percent', value: 0, expires_at: '', active: true });
-    const [announcementForm, setAnnouncementForm] = useState({ message: '', type: 'info', active: true });
+    const [adFile, setAdFile] = useState(null);
+    const [adPreview, setAdPreview] = useState(null);
+    const [discountForm, setDiscountForm] = useState({ code: '', type: 'percent', value: 0, expires_at: '', max_uses: '', active: true });
+    const [announcementForm, setAnnouncementForm] = useState({ title: '', message: '', cta_link: '', cta_text: '', type: 'info', active: true, expires_at: '' });
     const [logFilter, setLogFilter] = useState('ALL');
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -131,10 +133,20 @@ const SuperAdminDashboard = () => {
         e.preventDefault();
         try {
             let endpoint = '';
-            let data = {};
-            if (view === 'ads') { endpoint = '/super-admin/ads'; data = adForm; }
-            else if (view === 'discounts') { endpoint = '/super-admin/discounts'; data = discountForm; }
-            else if (view === 'announcements') { endpoint = '/super-admin/announcements'; data = announcementForm; }
+            let data;
+            
+            if (view === 'ads') {
+                endpoint = '/super-admin/ads';
+                data = new FormData();
+                Object.keys(adForm).forEach(key => data.append(key, adForm[key]));
+                if (adFile) data.append('image', adFile);
+            } else if (view === 'discounts') {
+                endpoint = '/super-admin/discounts';
+                data = discountForm;
+            } else if (view === 'announcements') {
+                endpoint = '/super-admin/announcements';
+                data = announcementForm;
+            }
 
             if (editItem) {
                 await api.put(`${endpoint}/${editItem.id}`, data);
@@ -143,8 +155,27 @@ const SuperAdminDashboard = () => {
             }
             setIsModalOpen(false);
             setEditItem(null);
+            setAdFile(null);
+            setAdPreview(null);
             fetchData();
-        } catch (err) { alert('Failed to save data'); }
+        } catch (err) { 
+            console.error('Submit error:', err);
+            alert('Failed to save data: ' + (err.response?.data?.error || err.message)); 
+        }
+    };
+
+    const handleAdFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setAdFile(file);
+            setAdPreview(URL.createObjectURL(file));
+        }
+    };
+
+    const getImageUrl = (url) => {
+        if (!url) return '';
+        if (url.startsWith('http')) return url;
+        return `${IMAGE_BASE_URL}${url}`;
     };
 
     const handleToggleShop = async (shopId, active, plan) => {
@@ -476,7 +507,7 @@ const SuperAdminDashboard = () => {
                                     {ads.map(ad => (
                                         <div key={ad.id} className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden group">
                                             <div className="aspect-video bg-slate-100 relative overflow-hidden">
-                                                <img src={ad.image_url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                                <img src={getImageUrl(ad.image_url)} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                                                 <div className={`absolute top-4 right-4 px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${ad.active ? 'bg-emerald-500 text-white' : 'bg-slate-400 text-white'}`}>
                                                     {ad.active ? 'Live' : 'Hidden'}
                                                 </div>
@@ -499,15 +530,15 @@ const SuperAdminDashboard = () => {
                             )}
 
                             {view === 'announcements' && (
-                                <div className="space-y-4 max-w-3xl">
+                                <div className="space-y-4 max-w-4xl">
                                     {announcements.map(notice => (
-                                        <div key={notice.id} className={`p-6 rounded-3xl border flex items-start gap-4 transition-all
+                                        <div key={notice.id} className={`p-6 rounded-3xl border flex items-start gap-4 transition-all hover:shadow-md
                                             ${notice.type === 'info' ? 'bg-blue-50/50 border-blue-100' :
                                                 notice.type === 'warning' ? 'bg-amber-50/50 border-amber-100' :
                                                     notice.type === 'danger' ? 'bg-red-50/50 border-red-100' :
                                                         'bg-emerald-50/50 border-emerald-100'}
                                         `}>
-                                            <div className={`p-2.5 rounded-xl
+                                            <div className={`p-2.5 rounded-xl shrink-0
                                                 ${notice.type === 'info' ? 'bg-blue-100 text-blue-600' :
                                                     notice.type === 'warning' ? 'bg-amber-100 text-amber-600' :
                                                         notice.type === 'danger' ? 'bg-red-100 text-red-600' :
@@ -518,14 +549,29 @@ const SuperAdminDashboard = () => {
                                                 {notice.type === 'danger' && <XCircle className="w-5 h-5" />}
                                                 {notice.type === 'success' && <CheckCircle2 className="w-5 h-5" />}
                                             </div>
-                                            <div className="flex-1">
+                                            <div className="flex-1 min-w-0">
                                                 <div className="flex items-center justify-between mb-2">
-                                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Created {new Date(notice.created_at).toLocaleDateString()}</p>
-                                                    <button onClick={() => handleDelete(notice.id)} className="text-slate-400 hover:text-red-500 transition-colors">
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Notice ID: {notice.id.slice(0, 8)}</span>
+                                                        <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full ${notice.active ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-200 text-slate-500'}`}>
+                                                            {notice.active ? 'Active' : 'Inactive'}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <button onClick={() => { setEditItem(notice); setAnnouncementForm({ ...notice, expires_at: notice.expires_at ? notice.expires_at.split('T')[0] : '' }); setIsModalOpen(true); }} className="p-1.5 text-slate-400 hover:text-blue-600 transition-colors"><Edit2 className="w-4 h-4" /></button>
+                                                        <button onClick={() => handleDelete(notice.id)} className="p-1.5 text-slate-400 hover:text-red-500 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                                                    </div>
                                                 </div>
-                                                <p className="text-sm font-bold text-slate-700 leading-relaxed">{notice.message}</p>
+                                                {notice.title && <h4 className="text-sm font-black text-slate-900 mb-1">{notice.title}</h4>}
+                                                <p className="text-xs font-bold text-slate-500 leading-relaxed max-w-2xl">{notice.message}</p>
+                                                {notice.cta_link && (
+                                                    <div className="mt-3 flex items-center gap-2">
+                                                        <span className="text-[9px] font-black uppercase text-slate-400">CTA:</span>
+                                                        <a href={notice.cta_link} target="_blank" rel="noopener noreferrer" className="text-[10px] font-black text-blue-600 hover:underline flex items-center gap-1">
+                                                            {notice.cta_text || 'Learn More'} <LinkIcon className="w-3 h-3" />
+                                                        </a>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     ))}
@@ -546,12 +592,43 @@ const SuperAdminDashboard = () => {
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
                                             {discounts.map(d => (
-                                                <tr key={d.id} className="hover:bg-slate-50/50">
-                                                    <td className="px-6 py-4"><span className="text-xs font-black bg-blue-50 text-blue-600 px-3 py-1.5 rounded-xl border border-blue-100">{d.code}</span></td>
-                                                    <td className="px-6 py-4 text-xs font-black text-slate-600">{d.value}{d.type === 'percent' ? '%' : ' AED'}</td>
-                                                    <td className="px-6 py-4 text-[10px] font-bold text-slate-400">{d.expires_at ? new Date(d.expires_at).toLocaleDateString() : 'Evergreen'}</td>
+                                                <tr key={d.id} className="hover:bg-slate-50/50 group">
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-xs font-black bg-blue-50 text-blue-600 px-3 py-1.5 rounded-xl border border-blue-100">{d.code}</span>
+                                                            {!d.active && <span className="text-[8px] font-black uppercase bg-slate-100 text-slate-400 px-2 py-0.5 rounded-full">Inactive</span>}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <p className="text-xs font-black text-slate-700">{d.value}{d.type === 'percent' ? '%' : ' AED'}</p>
+                                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{d.type} discount</p>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="space-y-1">
+                                                            <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500">
+                                                                <Users className="w-3 h-3" /> {d.used_count} / {d.max_uses || '∞'} uses
+                                                            </div>
+                                                            <div className="w-20 h-1 bg-slate-100 rounded-full overflow-hidden">
+                                                                <div 
+                                                                    className="h-full bg-blue-500" 
+                                                                    style={{ width: d.max_uses ? `${(d.used_count / d.max_uses) * 100}%` : '20%' }}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400">
+                                                            <Calendar className="w-3 h-3" /> {d.expires_at ? new Date(d.expires_at).toLocaleDateString() : 'Evergreen'}
+                                                        </div>
+                                                        {d.expires_at && new Date(d.expires_at) < new Date() && (
+                                                            <span className="text-[8px] font-black text-red-500 uppercase">Expired</span>
+                                                        )}
+                                                    </td>
                                                     <td className="px-6 py-4 text-right">
-                                                        <button onClick={() => handleDelete(d.id)} className="p-2 text-slate-400 hover:text-red-600 transition-all"><Trash2 className="w-4 h-4" /></button>
+                                                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <button onClick={() => { setEditItem(d); setDiscountForm({ ...d, expires_at: d.expires_at ? d.expires_at.split('T')[0] : '' }); setIsModalOpen(true); }} className="p-2 text-slate-400 hover:text-blue-600 transition-all"><Edit2 className="w-4 h-4" /></button>
+                                                            <button onClick={() => handleDelete(d.id)} className="p-2 text-slate-400 hover:text-red-600 transition-all"><Trash2 className="w-4 h-4" /></button>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             ))}
@@ -602,8 +679,31 @@ const SuperAdminDashboard = () => {
                                                 <input type="text" required value={adForm.title} onChange={e => setAdForm({ ...adForm, title: e.target.value })} className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-4 text-sm font-bold focus:border-blue-500 outline-none" placeholder="Summer Growth Pack..." />
                                             </div>
                                             <div className="space-y-1.5">
-                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 flex items-center gap-1.5"><ImageIcon className="w-3 h-3" /> Asset URL</label>
-                                                <input type="text" required value={adForm.image_url} onChange={e => setAdForm({ ...adForm, image_url: e.target.value })} className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-4 text-sm font-bold focus:border-blue-500 outline-none" placeholder="https://..." />
+                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 flex items-center gap-1.5"><ImageIcon className="w-3 h-3" /> Asset Image</label>
+                                                <div className="relative group">
+                                                    <input 
+                                                        type="file" 
+                                                        accept="image/*"
+                                                        onChange={handleAdFileChange}
+                                                        className="hidden" 
+                                                        id="ad-image-upload" 
+                                                    />
+                                                    <label 
+                                                        htmlFor="ad-image-upload"
+                                                        className="flex flex-col items-center justify-center w-full aspect-video bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl cursor-pointer hover:bg-slate-100/50 hover:border-blue-300 transition-all overflow-hidden"
+                                                    >
+                                                        {adPreview || adForm.image_url ? (
+                                                            <img src={adPreview || getImageUrl(adForm.image_url)} alt="Preview" className="w-full h-full object-cover" />
+                                                        ) : (
+                                                            <>
+                                                                <div className="w-12 h-12 bg-white rounded-2xl shadow-sm flex items-center justify-center text-slate-400 mb-3 group-hover:scale-110 transition-transform">
+                                                                    <Plus className="w-6 h-6" />
+                                                                </div>
+                                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Select Banner Image</p>
+                                                            </>
+                                                        )}
+                                                    </label>
+                                                </div>
                                             </div>
                                             <div className="space-y-1.5">
                                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Action Link (Optional)</label>
@@ -611,29 +711,49 @@ const SuperAdminDashboard = () => {
                                             </div>
                                         </div>
                                     ) : (
-                                        <div className="grid grid-cols-1 gap-3 animate-in fade-in slide-in-from-top-2">
-                                            {AD_TEMPLATES.map(template => (
-                                                <button
-                                                    key={template.id}
-                                                    type="button"
-                                                    onClick={() => setAdForm({ 
-                                                        ...adForm, 
-                                                        template_id: template.id,
-                                                        title: template.title,
-                                                        image_url: template.image_url,
-                                                        link_url: template.link_url
-                                                    })}
-                                                    className={`p-4 rounded-3xl border-2 text-left transition-all flex items-center gap-4 ${adForm.template_id === template.id ? 'border-blue-600 bg-blue-50' : 'border-slate-100 hover:border-blue-200'}`}
-                                                >
-                                                    <div className="w-16 h-12 bg-slate-200 rounded-xl overflow-hidden shrink-0">
-                                                        <img src={template.image_url} alt="" className="w-full h-full object-cover" />
+                                        <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
+                                            <div className="grid grid-cols-1 gap-3">
+                                                {AD_TEMPLATES.map(template => (
+                                                    <button
+                                                        key={template.id}
+                                                        type="button"
+                                                        onClick={() => setAdForm({ 
+                                                            ...adForm, 
+                                                            template_id: template.id,
+                                                            title: template.title,
+                                                            image_url: template.image_url,
+                                                            link_url: template.link_url
+                                                        })}
+                                                        className={`p-4 rounded-3xl border-2 text-left transition-all flex items-center gap-4 ${adForm.template_id === template.id ? 'border-blue-600 bg-blue-50' : 'border-slate-100 hover:border-blue-200'}`}
+                                                    >
+                                                        <div className="w-16 h-12 bg-slate-200 rounded-xl overflow-hidden shrink-0">
+                                                            <img src={template.image_url} alt="" className="w-full h-full object-cover" />
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm font-black text-slate-900">{template.title}</p>
+                                                            <p className="text-[10px] font-bold text-slate-500">{template.description}</p>
+                                                        </div>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                            {adForm.template_id && (
+                                                <div className="pt-4 border-t border-slate-50 space-y-4 animate-in fade-in slide-in-from-top-2">
+                                                    <div className="space-y-1.5">
+                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Customize Title</label>
+                                                        <input type="text" value={adForm.title} onChange={e => setAdForm({ ...adForm, title: e.target.value })} className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-4 text-sm font-bold focus:border-blue-500 outline-none" />
                                                     </div>
-                                                    <div>
-                                                        <p className="text-sm font-black text-slate-900">{template.title}</p>
-                                                        <p className="text-[10px] font-bold text-slate-500">{template.description}</p>
+                                                    <div className="space-y-1.5">
+                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Custom Image Override (Optional)</label>
+                                                        <div className="relative group">
+                                                            <input type="file" accept="image/*" onChange={handleAdFileChange} className="hidden" id="ad-template-image-upload" />
+                                                            <label htmlFor="ad-template-image-upload" className="flex items-center gap-3 w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-4 cursor-pointer hover:bg-slate-100 transition-all">
+                                                                <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-slate-400 shadow-sm"><ImageIcon className="w-4 h-4" /></div>
+                                                                <span className="text-xs font-bold text-slate-500">{adFile ? adFile.name : 'Click to override template image'}</span>
+                                                            </label>
+                                                        </div>
                                                     </div>
-                                                </button>
-                                            ))}
+                                                </div>
+                                            )}
                                         </div>
                                     )}
 
@@ -648,17 +768,31 @@ const SuperAdminDashboard = () => {
                                 </div>
                             )}
 
-                            {view === 'announcements' && (
+                             {view === 'announcements' && (
                                 <div className="space-y-4">
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Notice Title</label>
+                                        <input type="text" value={announcementForm.title} onChange={e => setAnnouncementForm({ ...announcementForm, title: e.target.value })} className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-4 text-sm font-bold focus:border-blue-500 outline-none" placeholder="E.g. System Update" />
+                                    </div>
                                     <div className="space-y-1.5">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Notice Content</label>
                                         <textarea
-                                            required rows={4}
+                                            required rows={3}
                                             value={announcementForm.message}
                                             onChange={e => setAnnouncementForm({ ...announcementForm, message: e.target.value })}
                                             className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-4 text-sm font-bold focus:border-blue-500 outline-none resize-none"
                                             placeholder="System update scheduled for 2 AM tonight..."
                                         />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">CTA Label</label>
+                                            <input type="text" value={announcementForm.cta_text} onChange={e => setAnnouncementForm({ ...announcementForm, cta_text: e.target.value })} className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-4 text-sm font-bold focus:border-blue-500 outline-none" placeholder="Check it out" />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">CTA Link</label>
+                                            <input type="text" value={announcementForm.cta_link} onChange={e => setAnnouncementForm({ ...announcementForm, cta_link: e.target.value })} className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-4 text-sm font-bold focus:border-blue-500 outline-none" placeholder="https://..." />
+                                        </div>
                                     </div>
                                     <div className="space-y-1.5">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Notice Type</label>
@@ -679,22 +813,40 @@ const SuperAdminDashboard = () => {
                                 </div>
                             )}
 
-                            {view === 'discounts' && (
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="col-span-2 space-y-1.5">
+                             {view === 'discounts' && (
+                                <div className="space-y-6">
+                                    <div className="space-y-1.5">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Code Name</label>
-                                        <input type="text" required value={discountForm.code} onChange={e => setDiscountForm({ ...discountForm, code: e.target.value.toUpperCase() })} className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-4 text-sm font-black focus:border-blue-500 outline-none" placeholder="LAUNCH2026" />
+                                        <div className="relative">
+                                            <Ticket className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                            <input type="text" required value={discountForm.code} onChange={e => setDiscountForm({ ...discountForm, code: e.target.value.toUpperCase() })} className="w-full bg-slate-50 border border-slate-100 rounded-2xl pl-11 pr-4 py-4 text-sm font-black focus:border-blue-500 outline-none" placeholder="LAUNCH2026" />
+                                        </div>
                                     </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Amount</label>
-                                        <input type="number" required value={discountForm.value} onChange={e => setDiscountForm({ ...discountForm, value: e.target.value })} className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-4 text-sm font-bold focus:border-blue-500 outline-none" />
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Unit Type</label>
+                                            <select value={discountForm.type} onChange={e => setDiscountForm({ ...discountForm, type: e.target.value })} className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-4 text-sm font-black focus:border-blue-500 outline-none">
+                                                <option value="percent">Percentage (%)</option>
+                                                <option value="fixed">Flat Amount</option>
+                                            </select>
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Discount Value</label>
+                                            <input type="number" required value={discountForm.value} onChange={e => setDiscountForm({ ...discountForm, value: e.target.value })} className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-4 text-sm font-bold focus:border-blue-500 outline-none" />
+                                        </div>
                                     </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Unit</label>
-                                        <select value={discountForm.type} onChange={e => setDiscountForm({ ...discountForm, type: e.target.value })} className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-4 text-sm font-black focus:border-blue-500 outline-none">
-                                            <option value="percent">% Off</option>
-                                            <option value="fixed">AED Off</option>
-                                        </select>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Max Usage (Optional)</label>
+                                            <input type="number" value={discountForm.max_uses} onChange={e => setDiscountForm({ ...discountForm, max_uses: e.target.value })} className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-4 text-sm font-bold focus:border-blue-500 outline-none" placeholder="Unlimted" />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Expiry Date</label>
+                                            <div className="relative">
+                                                <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                                <input type="date" value={discountForm.expires_at} onChange={e => setDiscountForm({ ...discountForm, expires_at: e.target.value })} className="w-full bg-slate-50 border border-slate-100 rounded-2xl pl-11 pr-4 py-4 text-sm font-bold focus:border-blue-500 outline-none" />
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             )}

@@ -25,7 +25,14 @@ const storage = multer.diskStorage({
     },
     filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, 'product-' + uniqueSuffix + path.extname(file.originalname));
+        // Detect prefix based on route or field
+        let prefix = 'file';
+        if (req.baseUrl.includes('super-admin') || req.url.includes('ads')) {
+            prefix = 'ad';
+        } else if (file.fieldname === 'image') {
+            prefix = 'product';
+        }
+        cb(null, prefix + '-' + uniqueSuffix + path.extname(file.originalname));
     }
 });
 

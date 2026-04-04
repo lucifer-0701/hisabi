@@ -3,12 +3,22 @@ const router = express.Router();
 const superAdminController = require('../controllers/superAdminController');
 const { authenticateSuperAdmin } = require('../middleware/superAdminAuth');
 const { Advertisement } = require('../../../database/models');
+const upload = require('../middleware/upload');
 
 // Public ad fetch
 router.get('/public/ads', async (req, res) => {
     try {
         const ads = await Advertisement.findAll({ where: { active: true } });
         res.json(ads);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed' });
+    }
+});
+
+router.get('/public/announcements', async (req, res) => {
+    try {
+        const list = await Announcement.findAll({ where: { active: true }, order: [['created_at', 'DESC']] });
+        res.json(list);
     } catch (error) {
         res.status(500).json({ error: 'Failed' });
     }
@@ -38,10 +48,14 @@ router.get('/announcements', superAdminController.getAnnouncements);
 router.post('/announcements', superAdminController.createAnnouncement);
 router.delete('/announcements/:id', superAdminController.deleteAnnouncement);
 
+const upload = require('../middleware/upload');
+
+// ... (other contents)
+
 // Ads
 router.get('/ads', superAdminController.getAds);
-router.post('/ads', superAdminController.createAd);
-router.put('/ads/:id', superAdminController.updateAd);
+router.post('/ads', upload.single('image'), superAdminController.createAd);
+router.put('/ads/:id', upload.single('image'), superAdminController.updateAd);
 router.delete('/ads/:id', superAdminController.deleteAd);
 
 // Discounts

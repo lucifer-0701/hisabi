@@ -10,6 +10,7 @@ const DiscountCode = sequelize.define('DiscountCode', {
     min_order_amount: { type: DataTypes.DECIMAL(10, 2), defaultValue: 0 },
     max_uses: { type: DataTypes.INTEGER, allowNull: true },
     used_count: { type: DataTypes.INTEGER, defaultValue: 0 },
+    expires_at: { type: DataTypes.DATE, allowNull: true },
     active: { type: DataTypes.BOOLEAN, defaultValue: true },
 }, { tableName: 'discount_codes', timestamps: true, createdAt: 'created_at', updatedAt: false });
 
