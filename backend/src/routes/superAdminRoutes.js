@@ -46,6 +46,7 @@ router.put('/shops/:id', superAdminController.updateShop);
 // Announcements
 router.get('/announcements', superAdminController.getAnnouncements);
 router.post('/announcements', superAdminController.createAnnouncement);
+router.put('/announcements/:id', superAdminController.updateAnnouncement);
 router.delete('/announcements/:id', superAdminController.deleteAnnouncement);
 
 // Ads

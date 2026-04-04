@@ -87,6 +87,7 @@ const createProduct = async (req, res) => {
     const t = await sequelize.transaction();
     try {
         const shop_id = req.user.shop_id;
+        
         // Parse bundle_items if sent as string (multipart/form-data limitation)
         let { name, barcode, cost_price, selling_price, stock_quantity, mrp, is_bundle, bundle_items, category_id } = req.body;
         const image_path = req.file ? `/uploads/${req.file.filename}` : null;
@@ -166,6 +167,7 @@ const updateProduct = async (req, res) => {
     try {
         const shop_id = req.user.shop_id;
         const { id } = req.params;
+        
         let { name, barcode, cost_price, selling_price, stock_quantity, mrp, is_bundle, bundle_items, category_id } = req.body;
         const image_path = req.file ? `/uploads/${req.file.filename}` : undefined;
 

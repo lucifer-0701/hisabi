@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api, { IMAGE_BASE_URL } from '../api/axios';
+import api, { IMAGE_BASE_URL, getImageUrl } from '../api/axios';
 import { Plus, Edit, Trash2, Search, X, Package, Upload, FolderPlus, ArrowLeft, Tag, Pencil, Check } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
@@ -83,7 +83,7 @@ const ProductModal = ({ editingProduct, categoryId, onClose, onSuccess, currency
                 mrp: editingProduct.mrp || 0,
                 stock_quantity: editingProduct.stock_quantity,
             });
-            setPreviewUrl(editingProduct.image_path ? `${IMAGE_BASE_URL}${editingProduct.image_path}` : null);
+            setPreviewUrl(editingProduct.image_path ? getImageUrl(editingProduct.image_path) : null);
         }
     }, [editingProduct]);
 
@@ -215,7 +215,7 @@ const ProductTable = ({ products, isAdmin, currency, onEdit, onDelete }) => {
                                     <div className="flex items-center gap-3">
                                         <div className="h-9 w-9 rounded-xl overflow-hidden flex-shrink-0 border border-gray-100">
                                             {product.image_path ? (
-                                                <img src={`${IMAGE_BASE_URL}${product.image_path}`} alt={product.name} className="h-full w-full object-cover" onError={(e) => { e.target.onerror = null; e.target.src = ''; }} />
+                                                <img src={getImageUrl(product.image_path)} alt={product.name} className="h-full w-full object-cover" onError={(e) => { e.target.onerror = null; e.target.src = ''; }} />
                                             ) : (
                                                 <div className="h-full w-full flex items-center justify-center text-blue-600 font-black text-xs bg-blue-50">
                                                     {product.name.charAt(0).toUpperCase()}

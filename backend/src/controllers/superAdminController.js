@@ -229,12 +229,33 @@ const createAnnouncement = async (req, res) => {
     try {
         const { message, title, cta_link, cta_text, type, active, expires_at } = req.body;
         const announcement = await Announcement.create({
-            message, title, cta_link, cta_text, type, active, expires_at
+            message, title, cta_link, cta_text, type, active,
+            expires_at: (expires_at === '' || expires_at === null) ? null : expires_at
         });
         await logActivity(req.superAdmin.username, 'CREATE_ANNOUNCEMENT', 'SYSTEM', { id: announcement.id });
         res.status(201).json(announcement);
     } catch (error) {
+        console.error('Create announcement error:', error);
         res.status(500).json({ error: 'Failed to create announcement' });
+    }
+};
+
+const updateAnnouncement = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { message, title, cta_link, cta_text, type, active, expires_at } = req.body;
+        const announcement = await Announcement.findByPk(id);
+        if (!announcement) return res.status(404).json({ error: 'Not found' });
+        
+        await announcement.update({
+            message, title, cta_link, cta_text, type, active,
+            expires_at: (expires_at === '' || expires_at === null) ? null : expires_at
+        });
+        await logActivity(req.superAdmin.username, 'UPDATE_ANNOUNCEMENT', 'SYSTEM', { id });
+        res.json(announcement);
+    } catch (error) {
+        console.error('Update announcement error:', error);
+        res.status(500).json({ error: 'Failed to update announcement' });
     }
 };
 
@@ -278,6 +299,8 @@ const createAd = async (req, res) => {
         if (req.file) {
             adData.image_url = `/uploads/${req.file.filename}`;
         }
+        if (adData.expires_at === '') adData.expires_at = null;
+        
         const ad = await Advertisement.create(adData);
         await logActivity(req.superAdmin.username, 'CREATE_AD', 'AD_MGMT', { id: ad.id });
         res.status(201).json(ad);
@@ -297,6 +320,7 @@ const updateAd = async (req, res) => {
         if (req.file) {
             updateData.image_url = `/uploads/${req.file.filename}`;
         }
+        if (updateData.expires_at === '') updateData.expires_at = null;
         
         await ad.update(updateData);
         await logActivity(req.superAdmin.username, 'UPDATE_AD', 'AD_MGMT', { id });
@@ -342,13 +366,18 @@ const createDiscount = async (req, res) => {
     try {
         const { code, type, value, min_order_amount, max_uses, expires_at, active } = req.body;
         const discount = await DiscountCode.create({
-            code, type, value, min_order_amount, max_uses, expires_at, active,
+            code, type, value, 
+            min_order_amount: min_order_amount || 0,
+            max_uses: (max_uses === '' || max_uses === null) ? null : parseInt(max_uses),
+            expires_at: (expires_at === '' || expires_at === null) ? null : expires_at,
+            active,
             shop_id: null
         });
         await logActivity(req.superAdmin.username, 'CREATE_PLATFORM_DISCOUNT', 'DISCOUNT_MGMT', { code: discount.code });
         res.status(201).json(discount);
     } catch (error) {
-        res.status(500).json({ error: 'Failed' });
+        console.error('Create Discount Error:', error);
+        res.status(500).json({ error: error.name === 'SequelizeUniqueConstraintError' ? 'Code already exists' : 'Failed' });
     }
 };
 
@@ -360,7 +389,11 @@ const updateDiscount = async (req, res) => {
         if (!d) return res.status(404).json({ error: 'Not found' });
         
         await d.update({
-            code, type, value, min_order_amount, max_uses, expires_at, active
+            code, type, value,
+            min_order_amount: min_order_amount || 0,
+            max_uses: (max_uses === '' || max_uses === null) ? null : parseInt(max_uses),
+            expires_at: (expires_at === '' || expires_at === null) ? null : expires_at,
+            active
         });
         await logActivity(req.superAdmin.username, 'UPDATE_PLATFORM_DISCOUNT', 'DISCOUNT_MGMT', { code: d.code });
         res.json(d);
@@ -383,7 +416,7 @@ const deleteDiscount = async (req, res) => {
 module.exports = {
     login, checkSetupStatus, initializeSuperAdmin,
     getAnalytics, getHistoricalAnalytics, getAllShops, updateShop,
-    getAnnouncements, createAnnouncement, deleteAnnouncement,
+    getAnnouncements, createAnnouncement, updateAnnouncement, deleteAnnouncement,
     getActivityLogs,
     getAds, createAd, updateAd, deleteAd,
     getDiscounts, createDiscount, updateDiscount, deleteDiscount, validateDiscount

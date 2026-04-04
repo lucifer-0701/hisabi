@@ -3,12 +3,17 @@ import axios from 'axios';
 const BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? 'https://hisabi-backend.up.railway.app' : 'http://localhost:5000');
 const api = axios.create({
     baseURL: `${BASE_URL}/api`,
-    headers: {
-        'Content-Type': 'application/json',
-    },
 });
 
 export const IMAGE_BASE_URL = BASE_URL;
+
+export const getImageUrl = (path) => {
+    if (!path) return null;
+    if (path.startsWith('http')) return path;
+    const base = IMAGE_BASE_URL.endsWith('/') ? IMAGE_BASE_URL.slice(0, -1) : IMAGE_BASE_URL;
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+    return `${base}${normalizedPath}`;
+};
 
 // Add a request interceptor to add the auth token to requests
 api.interceptors.request.use(
