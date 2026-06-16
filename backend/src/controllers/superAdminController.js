@@ -124,15 +124,16 @@ const getAnalytics = async (req, res) => {
             Shop.count({ where: { active: true } }),
             Invoice.count(),
             Product.count(),
-            Invoice.sum('total_amount')
+            Invoice.sum('grand_total')
         ]);
 
         res.json({
             shops: { total: totalShops, active: activeShops },
             usage: { invoices: totalInvoices, products: totalProducts },
-            revenue: revenueData || 0
+            revenue: parseFloat(revenueData || 0)
         });
     } catch (error) {
+        console.error('System analytics error:', error);
         res.status(500).json({ error: 'Failed to fetch analytics' });
     }
 };
@@ -142,7 +143,7 @@ const getHistoricalAnalytics = async (req, res) => {
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-        const shopGrowth = await Shop.findAll({
+        let shopGrowth = await Shop.findAll({
             attributes: [
                 [sequelize.fn('DATE', sequelize.col('created_at')), 'date'],
                 [sequelize.fn('COUNT', sequelize.col('id')), 'count']
@@ -154,7 +155,24 @@ const getHistoricalAnalytics = async (req, res) => {
             order: [[sequelize.fn('DATE', sequelize.col('created_at')), 'ASC']]
         });
 
-        const invoiceGrowth = await Invoice.findAll({
+        // Fallback to 365 days if no shops created in last 30 days
+        if (shopGrowth.length === 0) {
+            const oneYearAgo = new Date();
+            oneYearAgo.setDate(oneYearAgo.getDate() - 365);
+            shopGrowth = await Shop.findAll({
+                attributes: [
+                    [sequelize.fn('DATE', sequelize.col('created_at')), 'date'],
+                    [sequelize.fn('COUNT', sequelize.col('id')), 'count']
+                ],
+                where: {
+                    created_at: { [Op.gte]: oneYearAgo }
+                },
+                group: [sequelize.fn('DATE', sequelize.col('created_at'))],
+                order: [[sequelize.fn('DATE', sequelize.col('created_at')), 'ASC']]
+            });
+        }
+
+        let invoiceGrowth = await Invoice.findAll({
             attributes: [
                 [sequelize.fn('DATE', sequelize.col('created_at')), 'date'],
                 [sequelize.fn('COUNT', sequelize.col('id')), 'count']
@@ -165,6 +183,23 @@ const getHistoricalAnalytics = async (req, res) => {
             group: [sequelize.fn('DATE', sequelize.col('created_at'))],
             order: [[sequelize.fn('DATE', sequelize.col('created_at')), 'ASC']]
         });
+
+        // Fallback to 365 days if no invoices created in last 30 days
+        if (invoiceGrowth.length === 0) {
+            const oneYearAgo = new Date();
+            oneYearAgo.setDate(oneYearAgo.getDate() - 365);
+            invoiceGrowth = await Invoice.findAll({
+                attributes: [
+                    [sequelize.fn('DATE', sequelize.col('created_at')), 'date'],
+                    [sequelize.fn('COUNT', sequelize.col('id')), 'count']
+                ],
+                where: {
+                    created_at: { [Op.gte]: oneYearAgo }
+                },
+                group: [sequelize.fn('DATE', sequelize.col('created_at'))],
+                order: [[sequelize.fn('DATE', sequelize.col('created_at')), 'ASC']]
+            });
+        }
 
         res.json({
             shops: shopGrowth,

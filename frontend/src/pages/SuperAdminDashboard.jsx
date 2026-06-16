@@ -4,7 +4,7 @@ import {
     Shield, Megaphone as AnnouncementIcon, Ticket, LogOut, Plus, Trash2, Edit2,
     CheckCircle2, XCircle, Layout, Chrome, BarChart2, DollarSign,
     Save, X, Image as ImageIcon, Link as LinkIcon, Calendar,
-    Users, Activity, Store, AlertCircle, Info, Menu
+    Users, Activity, Store, AlertCircle, Info, Menu, ChevronDown, ChevronUp
 } from 'lucide-react';
 import api, { IMAGE_BASE_URL } from '../api/axios';
 
@@ -47,6 +47,7 @@ const SuperAdminDashboard = () => {
     const [discounts, setDiscounts] = useState([]);
     const [announcements, setAnnouncements] = useState([]);
     const [logs, setLogs] = useState([]);
+    const [expandedLogs, setExpandedLogs] = useState({});
 
     // Form States
     // Form States
@@ -319,15 +320,34 @@ const SuperAdminDashboard = () => {
     </div>
 );
 
+    const formatLogTime = (dateStr) => {
+        const date = new Date(dateStr);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+
+        if (diffMins < 1) return 'Just now';
+        if (diffMins < 60) return `${diffMins}m ago`;
+        if (diffHours < 24) return `${diffHours}h ago`;
+        if (diffDays < 7) return `${diffDays}d ago`;
+        return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    };
+
+    const toggleLogDetails = (id) => {
+        setExpandedLogs(prev => ({ ...prev, [id]: !prev[id] }));
+    };
+
     const renderLogs = () => {
         const filteredLogs = logFilter === 'ALL' ? logs : logs.filter(log => log.category === logFilter);
         const categories = [
             { id: 'ALL', label: 'All Activity', icon: Activity, color: 'text-slate-600', bg: 'bg-slate-100' },
-            { id: 'AUTH', label: 'Security/Auth', icon: Shield, color: 'text-blue-600', bg: 'bg-blue-100' },
-            { id: 'SHOP_MGMT', label: 'Shop Control', icon: Store, color: 'text-emerald-600', bg: 'bg-emerald-100' },
-            { id: 'AD_MGMT', label: 'Ad Engine', icon: Layout, color: 'text-purple-600', bg: 'bg-purple-100' },
-            { id: 'DISCOUNT_MGMT', label: 'Tier Codes', icon: Ticket, color: 'text-amber-600', bg: 'bg-amber-100' },
-            { id: 'SYSTEM', label: 'System', icon: Shield, color: 'text-rose-600', bg: 'bg-rose-100' }
+            { id: 'AUTH', label: 'Security/Auth', icon: Shield, color: 'text-blue-600', bg: 'bg-blue-50 border border-blue-100' },
+            { id: 'SHOP_MGMT', label: 'Shop Control', icon: Store, color: 'text-emerald-600', bg: 'bg-emerald-50 border border-emerald-100' },
+            { id: 'AD_MGMT', label: 'Ad Engine', icon: Layout, color: 'text-purple-600', bg: 'bg-purple-50 border border-purple-100' },
+            { id: 'DISCOUNT_MGMT', label: 'Tier Codes', icon: Ticket, color: 'text-amber-600', bg: 'bg-amber-50 border border-amber-100' },
+            { id: 'SYSTEM', label: 'System', icon: Shield, color: 'text-rose-600', bg: 'bg-rose-50 border border-rose-100' }
         ];
 
         return (
@@ -337,8 +357,8 @@ const SuperAdminDashboard = () => {
                         <button
                             key={cat.id}
                             onClick={() => setLogFilter(cat.id)}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all
-                                ${logFilter === cat.id ? 'bg-slate-900 text-white shadow-lg' : 'bg-white text-slate-500 border border-slate-100 hover:border-slate-300'}
+                            className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all active:scale-95
+                                ${logFilter === cat.id ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/10' : 'bg-white text-slate-500 border border-slate-100 hover:border-slate-300'}
                             `}
                         >
                             <cat.icon className="w-3.5 h-3.5" /> {cat.label}
@@ -346,38 +366,61 @@ const SuperAdminDashboard = () => {
                     ))}
                 </div>
 
-                <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden min-h-[400px]">
-                    <div className="p-8 border-b border-slate-50 flex items-center justify-between">
+                <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden min-h-[400px] flex flex-col">
+                    <div className="px-8 py-6 border-b border-slate-50 flex items-center justify-between bg-slate-50/20">
                         <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight flex items-center gap-2">
                             <Activity className="w-4 h-4 text-blue-600" /> Administrative Audit Trail
                         </h3>
-                        <p className="text-[10px] font-bold text-slate-400">{filteredLogs.length} events found</p>
+                        <span className="bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider">
+                            {filteredLogs.length} events
+                        </span>
                     </div>
-                    <div className="divide-y divide-slate-50 max-h-[800px] overflow-y-auto custom-scrollbar">
+                    <div className="divide-y divide-slate-50 max-h-[800px] overflow-y-auto custom-scrollbar flex-1">
                         {filteredLogs.length > 0 ? (
                             filteredLogs.map(log => {
                                 const cat = categories.find(c => c.id === log.category) || categories[categories.length - 1];
                                 return (
-                                    <div key={log.id} className="p-6 flex gap-6 hover:bg-slate-50/50 transition-colors group">
-                                        <div className={`w-12 h-12 ${cat.bg} ${cat.color} rounded-2xl flex items-center justify-center shrink-0 shadow-inner`}>
-                                            <cat.icon className="w-6 h-6" />
+                                    <div key={log.id} className="p-6 flex flex-col sm:flex-row gap-4 sm:gap-6 hover:bg-slate-50/30 transition-colors group">
+                                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm ${cat.bg} ${cat.color}`}>
+                                            <cat.icon className="w-5 h-5" />
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <div className="flex items-center justify-between mb-1">
-                                                <div className="flex items-center gap-2">
-                                                    <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full ${cat.bg} ${cat.color} tracking-widest`}>
-                                                        {cat.id}
+                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-2">
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    <span className={`text-[8px] font-black uppercase px-2.5 py-1 rounded-lg tracking-widest ${cat.bg} ${cat.color}`}>
+                                                        {log.category}
                                                     </span>
-                                                    <p className="text-sm font-black text-slate-900 uppercase tracking-tight">{log.action}</p>
+                                                    <p className="text-sm font-black text-slate-900 tracking-tight">{log.action}</p>
                                                 </div>
-                                                <p className="text-[10px] font-bold text-slate-400 group-hover:text-slate-600 transition-colors">{new Date(log.created_at).toLocaleString()}</p>
+                                                <p className="text-[10px] font-bold text-slate-400 group-hover:text-slate-500 transition-colors">
+                                                    {formatLogTime(log.created_at)}
+                                                </p>
                                             </div>
-                                            <p className="text-xs font-bold text-slate-500 mb-4 pb-2 border-b border-slate-50/50">
-                                                Executed by <span className="text-slate-900 italic font-black font-serif underline decoration-blue-500/20 underline-offset-2">{log.admin_username}</span>
+                                            <p className="text-xs font-bold text-slate-500">
+                                                Executed by <span className="text-slate-950 font-black px-2 py-0.5 bg-slate-100 rounded-md border border-slate-150">{log.admin_username}</span>
                                             </p>
+                                            
                                             {log.details && Object.keys(log.details).length > 0 && (
-                                                <div className="bg-slate-50 border border-slate-100 p-4 rounded-xl font-mono text-[10px] text-slate-600 overflow-x-auto">
-                                                    <pre className="whitespace-pre-wrap">{JSON.stringify(log.details, null, 2)}</pre>
+                                                <div className="mt-4">
+                                                    <button
+                                                        onClick={() => toggleLogDetails(log.id)}
+                                                        className="inline-flex items-center gap-1.5 text-[9px] font-black uppercase text-blue-600 hover:text-blue-700 tracking-wider transition-colors"
+                                                    >
+                                                        {expandedLogs[log.id] ? (
+                                                            <>Hide Payload <ChevronUp className="w-3.5 h-3.5" /></>
+                                                        ) : (
+                                                            <>Show Payload <ChevronDown className="w-3.5 h-3.5" /></>
+                                                        )}
+                                                    </button>
+                                                    {expandedLogs[log.id] && (
+                                                        <div className="mt-3 bg-slate-900 text-slate-100 border border-slate-800 p-5 rounded-2xl font-mono text-[10px] overflow-x-auto shadow-inner animate-in slide-in-from-top-2 duration-200">
+                                                            <div className="flex justify-between items-center pb-2 mb-3 border-b border-slate-800 text-[8px] font-black uppercase tracking-widest text-slate-500">
+                                                                <span>Payload Details</span>
+                                                                <span className="font-mono text-[7px]">{log.id}</span>
+                                                            </div>
+                                                            <pre className="whitespace-pre-wrap leading-relaxed">{JSON.stringify(log.details, null, 2)}</pre>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>
@@ -385,11 +428,14 @@ const SuperAdminDashboard = () => {
                                 );
                             })
                         ) : (
-                            <div className="p-20 text-center flex flex-col items-center gap-4">
-                                <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center">
-                                    <Activity className="w-8 h-8 text-slate-200" />
+                            <div className="p-20 text-center flex flex-col items-center justify-center gap-4 max-w-md mx-auto">
+                                <div className="w-20 h-20 bg-slate-50 rounded-[2rem] flex items-center justify-center text-slate-300 border border-slate-100 shadow-sm animate-pulse">
+                                    <Activity className="w-10 h-10" />
                                 </div>
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">No matching activities logged.</p>
+                                <h4 className="text-sm font-black text-slate-800 uppercase tracking-wider mt-2">No activities logged</h4>
+                                <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                                    Activity events matching the filter "{categories.find(c => c.id === logFilter)?.label}" will appear here once administrators perform updates.
+                                </p>
                             </div>
                         )}
                     </div>
@@ -646,7 +692,7 @@ const SuperAdminDashboard = () => {
             {isModalOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setIsModalOpen(false)} />
-                    <div className="relative bg-white rounded-[2rem] shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in duration-200">
+                    <div className="relative bg-white rounded-[2rem] shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto animate-in zoom-in duration-200">
                         <div className="px-8 pt-8 pb-4 flex items-center justify-between border-b border-slate-50">
                             <h3 className="text-xl font-black text-slate-900 uppercase">Create {view}</h3>
                             <button onClick={() => setIsModalOpen(false)} className="p-2 text-slate-400 hover:text-slate-900 rounded-xl hover:bg-slate-50"><X className="w-5 h-5" /></button>

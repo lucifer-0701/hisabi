@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const superAdminController = require('../controllers/superAdminController');
 const { authenticateSuperAdmin } = require('../middleware/superAdminAuth');
-const { Advertisement } = require('../../../database/models');
+const { Advertisement, Announcement } = require('../../../database/models');
 const upload = require('../middleware/upload');
 
 // Public ad fetch
