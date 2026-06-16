@@ -36,6 +36,11 @@ const upgradePlan = async (req, res) => {
             return res.status(404).json({ error: 'Shop not found' });
         }
 
+        // Restrict direct upgrades for Indian shops to prevent payment bypass
+        if (shop.country === 'IN' || shop.currency === 'INR') {
+            return res.status(403).json({ error: 'Direct upgrade is disabled for Indian accounts. Please use the Razorpay payment gateway.' });
+        }
+
         shop.plan = plan;
         await shop.save();
 

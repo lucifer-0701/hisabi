@@ -290,6 +290,31 @@ const deleteInvoice = async (req, res) => {
             return res.status(404).json({ error: 'Invoice not found' });
         }
 
+        // Restore stock
+        for (const item of invoice.items) {
+            const product = await Product.findOne({
+                where: { id: item.product_id, shop_id },
+                include: [{ model: BundleItem, as: 'bundleItems' }]
+            });
+
+            if (product) {
+                if (product.is_bundle) {
+                    for (const bundleItem of product.bundleItems) {
+                        const component = await Product.findByPk(bundleItem.product_id);
+                        if (component) {
+                            await component.update({
+                                stock_quantity: component.stock_quantity + (bundleItem.quantity * item.quantity)
+                            }, { transaction: t });
+                        }
+                    }
+                } else {
+                    await product.update({
+                        stock_quantity: product.stock_quantity + item.quantity
+                    }, { transaction: t });
+                }
+            }
+        }
+
         // Delete Invoice Items (cascading might handle this, but explicit is safer)
         await InvoiceItem.destroy({ where: { invoice_id: id }, transaction: t });
 

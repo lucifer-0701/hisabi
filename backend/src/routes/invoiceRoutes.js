@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const validate = require('../middleware/validate');
-const { authenticate } = require('../middleware/auth');
+const { authenticate, authorize } = require('../middleware/auth');
 const {
     createInvoice,
     listInvoices,
@@ -21,6 +21,6 @@ router.get('/', listInvoices);
 router.get('/:id', getInvoice);
 router.get('/:id/pdf', downloadInvoicePDF);
 router.patch('/:id/payment', updatePayment);
-router.delete('/:id', deleteInvoice);
+router.delete('/:id', authorize(['admin']), deleteInvoice);
 
 module.exports = router;

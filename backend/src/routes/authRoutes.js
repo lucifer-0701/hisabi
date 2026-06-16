@@ -17,8 +17,10 @@ const {
     updateProfileSchema
 } = require('../controllers/authController');
 
-router.post('/register', validate(registerSchema), register);
-router.post('/login', validate(loginSchema), login);
+const { authLimiter } = require('../middleware/rateLimiter');
+
+router.post('/register', authLimiter, validate(registerSchema), register);
+router.post('/login', authLimiter, validate(loginSchema), login);
 router.post('/staff', authenticate, authorize(['admin']), validate(createStaffSchema), createStaff);
 router.get('/staff', authenticate, authorize(['admin']), getStaff);
 router.delete('/staff/:id', authenticate, authorize(['admin']), deleteStaff);

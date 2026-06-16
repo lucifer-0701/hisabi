@@ -39,9 +39,17 @@ const storage = multer.diskStorage({
 const upload = multer({
     storage: storage,
     fileFilter: (req, file, cb) => {
-        // Allow all files for now to debug "image not allowed" error
-        // Verify mimetype later if strictly needed
-        cb(null, true);
+        const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+        const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
+        
+        const ext = path.extname(file.originalname).toLowerCase();
+        const mimeType = file.mimetype;
+
+        if (allowedMimeTypes.includes(mimeType) && allowedExtensions.includes(ext)) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only image files (JPEG, PNG, WebP, GIF) are allowed!'), false);
+        }
     },
     limits: {
         fileSize: 5 * 1024 * 1024 // 5MB limit

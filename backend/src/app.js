@@ -61,7 +61,7 @@ app.use(morgan('dev'));
 // This must come BEFORE express.json()
 app.use('/api/razorpay/webhook', express.raw({ type: 'application/json' }));
 
-app.use(express.json());
+app.use(express.json({ limit: '100kb' }));
 const os = require('os');
 const uploadDir = process.env.VERCEL
     ? path.join(os.tmpdir(), 'uploads')

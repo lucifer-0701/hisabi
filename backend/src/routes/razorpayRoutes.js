@@ -3,10 +3,12 @@ const router = express.Router();
 const { authenticate } = require('../middleware/auth');
 const { createOrder, verifyPayment, handleWebhook } = require('../controllers/razorpayController');
 
-// Authenticated endpoints
-router.post('/create-order', authenticate, createOrder);
-router.post('/verify', authenticate, verifyPayment);
+const { paymentLimiter } = require('../middleware/rateLimiter');
 
-router.post('/webhook', handleWebhook);
+// Authenticated endpoints
+router.post('/create-order', authenticate, paymentLimiter, createOrder);
+router.post('/verify', authenticate, paymentLimiter, verifyPayment);
+
+router.post('/webhook', paymentLimiter, handleWebhook);
 
 module.exports = router;

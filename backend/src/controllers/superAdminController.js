@@ -77,7 +77,11 @@ const checkSetupStatus = async (req, res) => {
 const initializeSuperAdmin = async (req, res) => {
     try {
         const { username, password, secret_key, bootstrap_secret } = req.body;
-        const masterSecret = process.env.SUPER_ADMIN_BOOTSTRAP_SECRET || 'initial-setup-must-set-this';
+        const masterSecret = process.env.SUPER_ADMIN_BOOTSTRAP_SECRET;
+
+        if (!masterSecret) {
+            return res.status(500).json({ error: 'SUPER_ADMIN_BOOTSTRAP_SECRET is not configured on the server.' });
+        }
 
         if (bootstrap_secret !== masterSecret) {
             return res.status(403).json({ error: 'Master Bootstrap Secret is incorrect' });

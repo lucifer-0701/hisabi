@@ -13,9 +13,17 @@ const seedSuperAdmin = async () => {
         // Clear existing super admins to ensure a fresh start
         await SuperAdmin.destroy({ where: {}, truncate: true });
 
-        const username = 'abdulhussain2688';
-        const password = 'D68*#M8X#@#HT2%!f47';
-        const secretKey = 'hisabi-pos-2026-abdul-hussain-2688';
+        const path = require('path');
+        require('dotenv').config({ path: path.join(__dirname, '../.env') });
+
+        const username = process.env.SUPER_ADMIN_USERNAME;
+        const password = process.env.SUPER_ADMIN_PASSWORD;
+        const secretKey = process.env.SUPER_ADMIN_SECRET_KEY;
+
+        if (!username || !password || !secretKey) {
+            console.error('Error: SUPER_ADMIN_USERNAME, SUPER_ADMIN_PASSWORD, and SUPER_ADMIN_SECRET_KEY must be set in the environment variables (e.g., .env file).');
+            process.exit(1);
+        }
 
         const passwordHash = await hashPassword(password);
         const secretKeyHash = await hashPassword(secretKey);

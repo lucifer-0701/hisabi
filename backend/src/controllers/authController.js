@@ -16,22 +16,22 @@ const registerSchema = Joi.object({
     phone: Joi.string().allow('', null),
     email: Joi.string().email().allow('', null),
     username: Joi.string().min(3).max(30).required(),
-    password: Joi.string().min(6).required()
+    password: Joi.string().min(6).max(72).required()
 });
 
 const loginSchema = Joi.object({
     username: Joi.string().required(),
-    password: Joi.string().required()
+    password: Joi.string().max(72).required()
 });
 
 const createStaffSchema = Joi.object({
     username: Joi.string().min(3).max(30).required(),
-    password: Joi.string().min(6).required()
+    password: Joi.string().min(6).max(72).required()
 });
 
 const updateProfileSchema = Joi.object({
     username: Joi.string().min(3).max(30).allow('', null),
-    password: Joi.string().min(6).allow('', null),
+    password: Joi.string().min(6).max(72).allow('', null),
     shop_name: Joi.string().allow('', null),
     address: Joi.string().allow('', null),
     phone: Joi.string().allow('', null),

@@ -26,10 +26,12 @@ router.get('/public/announcements', async (req, res) => {
 
 router.get('/public/discounts/validate', superAdminController.validateDiscount);
 
+const { authLimiter } = require('../middleware/rateLimiter');
+
 // Public Setup & Auth
 router.get('/setup-status', superAdminController.checkSetupStatus);
-router.post('/initialize', superAdminController.initializeSuperAdmin);
-router.post('/login', superAdminController.login);
+router.post('/initialize', authLimiter, superAdminController.initializeSuperAdmin);
+router.post('/login', authLimiter, superAdminController.login);
 
 // Protected Management Routes
 router.use(authenticateSuperAdmin);
